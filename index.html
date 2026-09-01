@@ -1077,7 +1077,7 @@ function renderInvitados(){
       if(l.departureDate) departureParts.push(formatDateLabel(l.departureDate) + (l.departureTime ? ' · ' + l.departureTime : ''));
       html += `
       <div class="event-body">
-        ${g.instagram ? `<div class="event-meta" style="display:flex;align-items:center;gap:12px;text-transform:none;letter-spacing:0;"><span>${ICON_INSTAGRAM}</span> <a href="https://instagram.com/${esc(cleanInstagram(g.instagram))}" target="_blank" rel="noopener" style="color:var(--ink);text-decoration:underline;">@${esc(cleanInstagram(g.instagram))}</a></div>` : ''}
+        ${g.instagram ? `<div class="event-meta" style="display:flex;align-items:center;gap:12px;text-transform:none;letter-spacing:0;"><span>${ICON_INSTAGRAM}</span> <span>@<a href="https://instagram.com/${esc(cleanInstagram(g.instagram))}" target="_blank" rel="noopener" style="color:var(--ink);font-weight:700;text-decoration:none;">${esc(cleanInstagram(g.instagram))}</a></span></div>` : ''}
         ${arrivalParts.length ? `<div class="event-meta">Llega: ${esc(arrivalParts[0])}</div>` : ''}
         ${departureParts.length ? `<div class="event-meta">Sale: ${esc(departureParts[0])}</div>` : ''}
         ${l.placeName ? `<div class="event-notes">${esc(l.placeName)}</div>` : ''}
