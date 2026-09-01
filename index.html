@@ -106,6 +106,7 @@
   .tab:nth-child(3).active{ background:var(--sky); color:#fff; border-color:var(--sky); }
   .tab:nth-child(4).active{ background:var(--purple); color:#fff; border-color:var(--purple); }
   .tab:nth-child(5).active{ background:var(--amber); color:#111; border-color:var(--amber); }
+  .tab:nth-child(6).active{ background:var(--green); color:#fff; border-color:var(--green); }
 
   main{padding:22px 18px 8px;max-width:640px;margin:0 auto;}
 
@@ -347,6 +348,7 @@
   <div class="tab" data-tab="mapa">Mapa</div>
   <div class="tab" data-tab="invitados">Invitados</div>
   <div class="tab" data-tab="gastos">Gastos</div>
+  <div class="tab" data-tab="enlaces">Enlaces</div>
 </div>
 
 <main id="app">
@@ -371,7 +373,7 @@ const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
 const docRef = doc(db, 'cumple', 'data');
 
-let state = { events: [], meetingPoints: [], guests: [], rsvps: {}, expenses: [], lodging: {} };
+let state = { events: [], meetingPoints: [], guests: [], rsvps: {}, expenses: [], lodging: {}, links: {} };
 let myGuestId = null;
 let activeTab = 'eventos';
 let editingItem = { events: null, meetingPoints: null, guest: null };
@@ -407,6 +409,10 @@ const SECTION_META = {
     emptyMsg: 'Aún no hay puntos de reunión. Agrega el primero abajo.'
   }
 };
+
+const ICON_INSTAGRAM = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;flex-shrink:0;"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none"/></svg>`;
+const ICON_WHATSAPP = `<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.39 1.26 4.82L2 22l5.41-1.42a9.87 9.87 0 0 0 4.63 1.18h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.51 2 12.04 2zm0 18.02h-.01a8.1 8.1 0 0 1-4.14-1.13l-.3-.18-3.08.81.82-3-.19-.31a8.11 8.11 0 0 1-1.24-4.3c0-4.49 3.65-8.14 8.15-8.14 2.18 0 4.22.85 5.76 2.39a8.09 8.09 0 0 1 2.39 5.76c0 4.49-3.66 8.1-8.16 8.1zm4.47-6.1c-.24-.12-1.44-.71-1.66-.79-.22-.08-.39-.12-.55.12-.16.24-.63.79-.78.95-.14.16-.29.18-.53.06-.24-.12-1.02-.38-1.94-1.2-.72-.64-1.2-1.44-1.34-1.68-.14-.24-.02-.37.11-.49.11-.11.24-.29.36-.43.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.55-1.32-.75-1.81-.2-.48-.4-.41-.55-.42h-.47c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.7 2.6 4.12 3.65.58.25 1.03.4 1.38.51.58.18 1.11.16 1.53.1.47-.07 1.44-.59 1.64-1.16.2-.57.2-1.06.14-1.16-.06-.1-.22-.16-.46-.28z"/></svg>`;
+const ICON_FOLDER = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>`;
 
 function genId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function esc(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -451,10 +457,11 @@ function loadAll(){
         guests: d.guests || [],
         rsvps: d.rsvps || {},
         expenses: d.expenses || [],
-        lodging: d.lodging || {}
+        lodging: d.lodging || {},
+        links: d.links || {}
       };
     } else {
-      state = { events: [], meetingPoints: [], guests: [], rsvps: {}, expenses: [], lodging: {} };
+      state = { events: [], meetingPoints: [], guests: [], rsvps: {}, expenses: [], lodging: {}, links: {} };
     }
     render();
   }, (err)=>{
@@ -488,7 +495,8 @@ function render(){
   else if(activeTab === 'puntos') app.innerHTML = renderEventSection('meetingPoints');
   else if(activeTab === 'mapa') app.innerHTML = renderMapa();
   else if(activeTab === 'invitados') app.innerHTML = renderInvitados();
-  else app.innerHTML = renderGastos();
+  else if(activeTab === 'gastos') app.innerHTML = renderGastos();
+  else app.innerHTML = renderEnlaces();
   attachHandlers();
   initCroquisMaps();
   initGeneralMap();
@@ -622,6 +630,33 @@ function renderMapa(){
   <div id="generalMap" style="width:100%;height:320px;border:1px solid var(--ink);background:#F2F2F0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Cargando mapa…</div>
   <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:14px;">
     Cada pin usa el color de su evento, punto de reunión o invitado.
+  </div>`;
+  return html;
+}
+
+function renderEnlaces(){
+  const wa = (state.links && state.links.whatsapp) || '';
+  const ph = (state.links && state.links.photos) || '';
+  let html = `<div class="section-title">Enlaces</div>`;
+
+  html += `<div class="card">
+    <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;">Grupo de WhatsApp</label>
+    <input type="text" id="linkWhatsapp" value="${esc(wa)}" placeholder="Pega el link de invitación al grupo" style="width:100%;margin-bottom:12px;">
+    <button class="btn small" data-action="save-link" data-field="whatsapp" style="margin-bottom:14px;">Guardar</button>
+    ${wa ? `
+    <a href="${esc(wa)}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;background:#25D366;color:#fff;padding:14px 16px;font-weight:700;text-transform:uppercase;font-size:13px;letter-spacing:.04em;text-decoration:none;">
+      ${ICON_WHATSAPP} Abrir grupo de WhatsApp
+    </a>` : `<div style="font-size:12px;color:var(--muted);">Pega el link y guarda para ver el botón de acceso directo.</div>`}
+  </div>`;
+
+  html += `<div class="card">
+    <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;">Carpeta compartida de fotos</label>
+    <input type="text" id="linkPhotos" value="${esc(ph)}" placeholder="Pega el link de la carpeta (Drive, iCloud, etc.)" style="width:100%;margin-bottom:12px;">
+    <button class="btn small" data-action="save-link" data-field="photos" style="margin-bottom:14px;">Guardar</button>
+    ${ph ? `
+    <a href="${esc(ph)}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;background:var(--ink);color:#fff;padding:14px 16px;font-weight:700;text-transform:uppercase;font-size:13px;letter-spacing:.04em;text-decoration:none;">
+      ${ICON_FOLDER} Abrir carpeta de fotos
+    </a>` : `<div style="font-size:12px;color:var(--muted);">Pega el link y guarda para ver el botón de acceso directo.</div>`}
   </div>`;
   return html;
 }
@@ -962,6 +997,11 @@ function renderGuestEditForm(g){
   <div class="card">
     <div class="section-title">Editando</div>
     <input type="text" id="editGuestName-${g.id}" value="${esc(g.name)}" placeholder="Nombre" style="width:100%;margin-bottom:14px;">
+    <div style="display:flex;align-items:center;border:1px solid var(--ink);margin-bottom:14px;">
+      <span style="padding:0 0 0 10px;color:var(--muted);">${ICON_INSTAGRAM}</span>
+      <span style="padding:8px 4px 8px 6px;color:var(--muted);">@</span>
+      <input type="text" id="editInstagram-${g.id}" value="${esc(g.instagram||'')}" placeholder="usuario" style="flex:1;border:none;padding-left:0;">
+    </div>
     <div class="lodging-fields">
       <div>
         <label>Fecha de llegada</label>
@@ -1013,6 +1053,7 @@ function renderInvitados(){
       if(l.departureDate) departureParts.push(formatDateLabel(l.departureDate) + (l.departureTime ? ' · ' + l.departureTime : ''));
       html += `
       <div class="event-body">
+        ${g.instagram ? `<div class="event-meta" style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;"><span style="color:var(--ink);">${ICON_INSTAGRAM}</span> <a href="https://instagram.com/${esc(g.instagram)}" target="_blank" rel="noopener" style="color:var(--ink);text-decoration:underline;">@${esc(g.instagram)}</a></div>` : ''}
         ${arrivalParts.length ? `<div class="event-meta">Llega: ${esc(arrivalParts[0])}</div>` : ''}
         ${departureParts.length ? `<div class="event-meta">Sale: ${esc(departureParts[0])}</div>` : ''}
         ${l.placeName ? `<div class="event-notes">${esc(l.placeName)}</div>` : ''}
@@ -1141,6 +1182,7 @@ async function onAction(e){
     const newName = document.getElementById(`editGuestName-${id}`).value.trim();
     if(!newName) return showToast('El nombre no puede quedar vacío');
     if(g) g.name = newName;
+    if(g) g.instagram = document.getElementById(`editInstagram-${id}`).value.trim().replace(/^@+/, '');
     if(!state.lodging[id]) state.lodging[id] = {};
     state.lodging[id].arrivalDate = document.getElementById(`editArrivalDate-${id}`).value;
     state.lodging[id].arrivalTime = document.getElementById(`editArrivalTime-${id}`).value;
@@ -1161,6 +1203,14 @@ async function onAction(e){
     expandedIds.delete(id);
     if(myGuestId === id) setMyGuestId(null);
     await persist(); render();
+  }
+  else if(action === 'save-link'){
+    const field = el.dataset.field;
+    const inputId = field === 'whatsapp' ? 'linkWhatsapp' : 'linkPhotos';
+    const val = document.getElementById(inputId).value.trim();
+    if(!state.links) state.links = {};
+    state.links[field] = val;
+    await persist(); render(); showToast('Guardado');
   }
   else if(action === 'add-expense'){
     const evId = el.dataset.event;
