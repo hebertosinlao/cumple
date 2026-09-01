@@ -427,7 +427,7 @@ function initials(name){
   return ((parts[0]?.[0]||'') + (parts[1]?.[0]||'')).toUpperCase();
 }
 function cleanInstagram(raw){
-  return (raw||'').replace(/[^a-zA-Z0-9_.]/g, '');
+  return (raw||'').replace(/[^a-zA-Z0-9_.]/g, '').replace(/^\.+/, '');
 }
 function assignColors(listKey){
   const days = groupByDay(state[listKey]);
