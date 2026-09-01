@@ -428,9 +428,7 @@ function initials(name){
   return ((parts[0]?.[0]||'') + (parts[1]?.[0]||'')).toUpperCase();
 }
 function cleanInstagram(raw){
-  const s = (raw || '').toString();
-  const match = s.match(/[a-zA-Z0-9_](?:[a-zA-Z0-9_.]*[a-zA-Z0-9_])?/);
-  return match ? match[0] : '';
+  return (raw || '').trim().replace(/^@+/, '');
 }
 function assignColors(listKey){
   const days = groupByDay(state[listKey]);
@@ -1077,7 +1075,7 @@ function renderInvitados(){
       if(l.departureDate) departureParts.push(formatDateLabel(l.departureDate) + (l.departureTime ? ' · ' + l.departureTime : ''));
       html += `
       <div class="event-body">
-        ${g.instagram ? `<div class="event-meta" style="display:flex;align-items:center;gap:12px;text-transform:none;letter-spacing:0;"><span>${ICON_INSTAGRAM}</span> <span>@<a href="https://instagram.com/${esc(cleanInstagram(g.instagram))}" target="_blank" rel="noopener" style="color:var(--ink);font-weight:700;text-decoration:none;">${esc(cleanInstagram(g.instagram))}</a></span></div>` : ''}
+        ${g.instagram ? `<div class="event-meta" style="display:flex;align-items:center;gap:10px;text-transform:none;letter-spacing:0;"><span>${ICON_INSTAGRAM}</span> <span>@<a href="https://instagram.com/${esc(cleanInstagram(g.instagram))}" target="_blank" rel="noopener" style="color:var(--ink);font-weight:700;text-decoration:none;">${esc(cleanInstagram(g.instagram))}</a></span></div>` : ''}
         ${arrivalParts.length ? `<div class="event-meta">Llega: ${esc(arrivalParts[0])}</div>` : ''}
         ${departureParts.length ? `<div class="event-meta">Sale: ${esc(departureParts[0])}</div>` : ''}
         ${l.placeName ? `<div class="event-notes">${esc(l.placeName)}</div>` : ''}
