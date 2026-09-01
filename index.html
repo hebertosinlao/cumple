@@ -412,9 +412,9 @@ function genId(){ return Date.now().toString(36) + Math.random().toString(36).sl
 function esc(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmtMoney(n){ return '$' + (Math.round(n*100)/100).toLocaleString('es-MX'); }
 function avatarColor(id){
-  let h = 0;
-  for(const c of id) h = (h*31 + c.charCodeAt(0)) >>> 0;
-  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+  const idx = state.guests.findIndex(g => g.id === id);
+  if(idx === -1) return AVATAR_COLORS[0];
+  return AVATAR_COLORS[idx % AVATAR_COLORS.length];
 }
 function initials(name){
   const parts = name.trim().split(/\s+/);
