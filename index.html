@@ -159,6 +159,20 @@
     background:rgba(0,0,0,.28);
     padding:4px 9px;
   }
+  .event-chip-toggle{
+    display:block;
+    width:100%;
+    text-align:left;
+    padding:12px 16px;
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    font-family:'Space Grotesk', sans-serif;
+    border:1.5px solid var(--ink);
+    cursor:pointer;
+    transition:background .15s, color .15s, border-color .15s;
+  }
   .event-chip{
     display:inline-block;
     padding:8px 14px;
@@ -363,8 +377,10 @@ let state = { events: [], meetingPoints: [], guests: [], rsvps: {}, expenses: []
 let myGuestId = null;
 let activeTab = 'eventos';
 let editingItem = { events: null, meetingPoints: null, guest: null };
+let expandedIds = new Set();
 let mapCounter = 0;
 const BRIGHT_COLORS = ['var(--pink)','var(--orange)','var(--green)','var(--purple)'];
+const EVENT_COLORS = ['#E1122D','#65A30D','#4C6EF5','#D6199C'];
 
 const SECTION_META = {
   events: {
@@ -393,6 +409,19 @@ function avatarColor(id){
 function initials(name){
   const parts = name.trim().split(/\s+/);
   return ((parts[0]?.[0]||'') + (parts[1]?.[0]||'')).toUpperCase();
+}
+function assignColors(listKey){
+  const days = groupByDay(state[listKey]);
+  const dayKeys = Object.keys(days).sort();
+  const map = {};
+  let idx = 0;
+  dayKeys.forEach(day=>{
+    days[day].forEach(item=>{
+      map[item.id] = EVENT_COLORS[idx % EVENT_COLORS.length];
+      idx++;
+    });
+  });
+  return map;
 }
 function showToast(msg){
   const t = document.getElementById('toast');
@@ -486,28 +515,32 @@ function renderAttendeeVisual(attendeeIds){
   </div>`;
 }
 
-function renderItemCard(listKey, item, cardIndex){
-  const attendeeIds = state.rsvps[item.id] ? Object.keys(state.rsvps[item.id]).filter(g=>state.rsvps[item.id][g]) : [];
-  const iAmGoing = myGuestId && attendeeIds.includes(myGuestId);
-  return `
-  <div class="card">
-    <div class="row">
-      <span class="event-chip" style="background:${pickColor(cardIndex)};">${esc(item.name)}</span>
-      <button class="rsvp-btn ${iAmGoing?'going':''}" data-action="toggle-rsvp" data-event="${item.id}" ${myGuestId?'':'disabled'}>
-        ${iAmGoing ? '✓ Voy' : 'Confirmar'}
-      </button>
-    </div>
+function renderItemCard(listKey, item, color){
+  const isOpen = expandedIds.has(item.id);
+  let html = `<div class="card">
+    <button class="event-chip-toggle" data-action="toggle-expand" data-id="${item.id}" style="${isOpen ? `background:${color};color:#fff;border-color:${color};` : `background:var(--paper);color:var(--ink);border-color:var(--ink);`}">${esc(item.name)}</button>`;
+  if(isOpen){
+    const attendeeIds = state.rsvps[item.id] ? Object.keys(state.rsvps[item.id]).filter(g=>state.rsvps[item.id][g]) : [];
+    const iAmGoing = myGuestId && attendeeIds.includes(myGuestId);
+    html += `
     <div class="event-body">
+      <div style="display:flex;justify-content:flex-end;margin-top:14px;">
+        <button class="rsvp-btn ${iAmGoing?'going':''}" data-action="toggle-rsvp" data-event="${item.id}" ${myGuestId?'':'disabled'}>
+          ${iAmGoing ? '✓ Voy' : 'Confirmar'}
+        </button>
+      </div>
       ${item.time ? `<div class="event-meta">${esc(item.time)}</div>` : ''}
       ${item.notes ? `<div class="event-notes">${esc(item.notes)}</div>` : ''}
-      ${mapsBlockHtml(item.location)}
+      ${mapsBlockHtml(item.location, color)}
       ${renderAttendeeVisual(attendeeIds)}
       <div class="row-start" style="margin-top:14px;">
         <button class="arrow-link" data-action="edit-item" data-list="${listKey}" data-id="${item.id}" style="text-transform:none;">Editar</button>
         <button class="arrow-link" data-action="delete-item" data-list="${listKey}" data-id="${item.id}" style="text-transform:none;">Eliminar</button>
       </div>
-    </div>
-  </div>`;
+    </div>`;
+  }
+  html += `</div>`;
+  return html;
 }
 
 function renderEditForm(listKey, item){
@@ -538,13 +571,12 @@ function renderEventSection(listKey){
   if(dayKeys.length === 0){
     html += `<div class="empty">${meta.emptyMsg}</div>`;
   }
-  let cardIndex = 0;
+  const colorMap = assignColors(listKey);
   dayKeys.forEach(day=>{
     const dateLabel = day === 'Sin fecha' ? 'Sin fecha' : new Date(day+'T00:00:00').toLocaleDateString('es-MX', {weekday:'long', day:'numeric', month:'long'});
     html += `<div class="day-divider"><h2>${esc(dateLabel)}</h2><span>${days[day].length} ${meta.label}${days[day].length!==1?'s':''}</span></div>`;
     days[day].forEach(item=>{
-      html += (editingItem[listKey] === item.id) ? renderEditForm(listKey, item) : renderItemCard(listKey, item, cardIndex);
-      cardIndex++;
+      html += (editingItem[listKey] === item.id) ? renderEditForm(listKey, item) : renderItemCard(listKey, item, colorMap[item.id]);
     });
   });
 
@@ -570,9 +602,9 @@ function renderMapa(){
     html += `<div class="empty">Agrega ubicaciones a tus eventos o puntos de reunión para verlas aquí.</div>`;
     return html;
   }
-  html += `<div id="generalMap" class="croquis-map" style="width:100%;height:320px;border:1px solid var(--ink);background:#F2F2F0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Cargando mapa…</div>
+  html += `<div id="generalMap" style="width:100%;height:320px;border:1px solid var(--ink);background:#F2F2F0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Cargando mapa…</div>
   <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:14px;">
-    <span style="color:#EC1F86;">●</span> Eventos &nbsp; <span style="color:#FF6A00;">●</span> Puntos de reunión
+    Cada pin usa el color de su evento o punto de reunión.
   </div>`;
   return html;
 }
@@ -700,15 +732,16 @@ async function initCroquisMaps(){
       continue;
     }
     const query = el.dataset.query;
+    const color = el.dataset.color;
     const coordMatch = query.match(/^(-?\d+\.\d+),\s*(-?\d+\.\d+)$/);
     if(coordMatch){
-      buildLeafletMap(el, parseFloat(coordMatch[1]), parseFloat(coordMatch[2]));
+      buildLeafletMap(el, parseFloat(coordMatch[1]), parseFloat(coordMatch[2]), color);
       continue;
     }
     try{
       const data = await fetchWithTimeout(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`, 8000);
       if(data && data[0]){
-        buildLeafletMap(el, parseFloat(data[0].lat), parseFloat(data[0].lon));
+        buildLeafletMap(el, parseFloat(data[0].lat), parseFloat(data[0].lon), color);
       } else {
         el.style.background = 'none';
         el.textContent = 'No se encontró el lugar para dibujar el mapa.';
@@ -745,9 +778,11 @@ async function initGeneralMap(){
     return;
   }
 
+  const eventColors = assignColors('events');
+  const meetingColors = assignColors('meetingPoints');
   const items = [
-    ...state.events.map(it => ({ ...it, kind:'evento', color:'#EC1F86' })),
-    ...state.meetingPoints.map(it => ({ ...it, kind:'punto de reunión', color:'#FF6A00' }))
+    ...state.events.map(it => ({ ...it, kind:'evento', color: eventColors[it.id] })),
+    ...state.meetingPoints.map(it => ({ ...it, kind:'punto de reunión', color: meetingColors[it.id] }))
   ].filter(it => it.location && it.location.trim());
 
   if(items.length === 0){
@@ -817,7 +852,8 @@ async function initGeneralMap(){
   else map.fitBounds(bounds, { padding:[24,24] });
 }
 
-function buildLeafletMap(el, lat, lng){
+function buildLeafletMap(el, lat, lng, color){
+  color = color || '#EC1F86';
   el.textContent = '';
   el.style.background = 'none';
   const map = L.map(el, { zoomControl:false, scrollWheelZoom:false }).setView([lat, lng], 15);
@@ -828,7 +864,7 @@ function buildLeafletMap(el, lat, lng){
   }).addTo(map);
   const icon = L.divIcon({
     className: 'croquis-pin',
-    html: '<div style="width:14px;height:14px;border-radius:50%;background:#EC1F86;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35);"></div>',
+    html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35);"></div>`,
     iconSize: [14,14],
     iconAnchor: [7,7]
   });
@@ -853,7 +889,7 @@ function extractMapQuery(input){
   }catch(e){ return null; }
 }
 
-function mapsBlockHtml(rawValue){
+function mapsBlockHtml(rawValue, color){
   if(!rawValue || !rawValue.trim()) return '';
   const s = rawValue.trim();
   const isUrl = looksLikeUrl(s);
@@ -864,7 +900,7 @@ function mapsBlockHtml(rawValue){
   }
   if(query){
     const mapId = 'map-' + (mapCounter++);
-    html += `<div class="croquis-map" id="${mapId}" data-query="${esc(query)}" style="width:100%;height:160px;border:1px solid var(--ink);margin-top:10px;background:#F2F2F0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Cargando mapa…</div>`;
+    html += `<div class="croquis-map" id="${mapId}" data-query="${esc(query)}" data-color="${esc(color||'#EC1F86')}" style="width:100%;height:160px;border:1px solid var(--ink);margin-top:10px;background:#F2F2F0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Cargando mapa…</div>`;
   } else if(isUrl && isShortLink(s)){
     const safe = esc(s).replace(/'/g,'&#39;');
     html += `
@@ -1005,6 +1041,11 @@ async function onAction(e){
     delete state.rsvps[id];
     if(listKey === 'events'){ state.expenses = state.expenses.filter(ex=>ex.eventId!==id); }
     await persist(); render();
+  }
+  else if(action === 'toggle-expand'){
+    const id = el.dataset.id;
+    if(expandedIds.has(id)) expandedIds.delete(id); else expandedIds.add(id);
+    render();
   }
   else if(action === 'edit-item'){
     editingItem[el.dataset.list] = el.dataset.id;
