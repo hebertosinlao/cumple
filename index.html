@@ -378,6 +378,7 @@ let myGuestId = null;
 let activeTab = 'eventos';
 let editingItem = { events: null, meetingPoints: null, guest: null };
 let expandedIds = new Set();
+let openAddForms = new Set();
 let mapCounter = 0;
 let suppressRender = false;
 let pendingRender = false;
@@ -427,7 +428,9 @@ function initials(name){
   return ((parts[0]?.[0]||'') + (parts[1]?.[0]||'')).toUpperCase();
 }
 function cleanInstagram(raw){
-  return (raw||'').replace(/[^a-zA-Z0-9_.]/g, '').replace(/^\.+/, '');
+  const s = (raw || '').toString();
+  const match = s.match(/[a-zA-Z0-9_](?:[a-zA-Z0-9_.]*[a-zA-Z0-9_])?/);
+  return match ? match[0] : '';
 }
 function assignColors(listKey){
   const days = groupByDay(state[listKey]);
@@ -601,18 +604,28 @@ function renderEventSection(listKey){
     });
   });
 
-  html += `
-  <div class="add-card">
-    <div class="section-title">${meta.addTitle}</div>
-    <div class="form-grid two">
-      <input type="text" id="itemName" placeholder="Nombre (ej. Cena)" >
-      <input type="text" id="itemLoc" placeholder="Dirección o link de Google Maps">
-      <input type="date" id="itemDate">
-      <input type="time" id="itemTime">
-    </div>
-    <input type="text" id="itemNotes" placeholder="Notas (opcional)" style="width:100%;margin-bottom:14px;">
-    <button class="btn" data-action="add-item" data-list="${listKey}">${meta.addBtn}</button>
-  </div>`;
+  if(openAddForms.has(listKey)){
+    html += `
+    <div class="add-card">
+      <div class="section-title">${meta.addTitle}</div>
+      <div class="form-grid two">
+        <input type="text" id="itemName" placeholder="Nombre (ej. Cena)" >
+        <input type="text" id="itemLoc" placeholder="Dirección o link de Google Maps">
+        <input type="date" id="itemDate">
+        <input type="time" id="itemTime">
+      </div>
+      <input type="text" id="itemNotes" placeholder="Notas (opcional)" style="width:100%;margin-bottom:14px;">
+      <div class="row-start">
+        <button class="btn" data-action="add-item" data-list="${listKey}">${meta.addBtn}</button>
+        <button class="arrow-link" data-action="toggle-add" data-list="${listKey}" style="text-transform:none;">Cancelar</button>
+      </div>
+    </div>`;
+  } else {
+    html += `
+    <div class="add-card">
+      <button class="btn" data-action="toggle-add" data-list="${listKey}" style="width:100%;">+ ${meta.addBtn}</button>
+    </div>`;
+  }
   return html;
 }
 
@@ -1077,13 +1090,21 @@ function renderInvitados(){
     }
     html += `</div>`;
   });
-  html += `
-  <div class="add-card">
-    <div class="row-start">
-      <input type="text" id="newGuestName" placeholder="Nombre del invitado" style="flex:1;">
-      <button class="btn" data-action="add-guest">Agregar</button>
-    </div>
-  </div>`;
+  if(openAddForms.has('guests')){
+    html += `
+    <div class="add-card">
+      <div class="row-start">
+        <input type="text" id="newGuestName" placeholder="Nombre del invitado" style="flex:1;">
+        <button class="btn" data-action="add-guest">Agregar</button>
+        <button class="arrow-link" data-action="toggle-add" data-list="guests" style="text-transform:none;">Cancelar</button>
+      </div>
+    </div>`;
+  } else {
+    html += `
+    <div class="add-card">
+      <button class="btn" data-action="toggle-add" data-list="guests" style="width:100%;">+ Agregar invitado</button>
+    </div>`;
+  }
   return html;
 }
 
@@ -1122,7 +1143,12 @@ async function onAction(e){
       time: document.getElementById('itemTime').value,
       notes: document.getElementById('itemNotes').value.trim()
     });
-    await persist(); render(); showToast('Agregado');
+    await persist(); openAddForms.delete(listKey); render(); showToast('Agregado');
+  }
+  else if(action === 'toggle-add'){
+    const key = el.dataset.list;
+    if(openAddForms.has(key)) openAddForms.delete(key); else openAddForms.add(key);
+    render();
   }
   else if(action === 'delete-item'){
     const listKey = el.dataset.list, id = el.dataset.id;
@@ -1177,7 +1203,7 @@ async function onAction(e){
     const name = input.value.trim();
     if(!name) return showToast('Escribe un nombre');
     state.guests.push({id: genId(), name});
-    await persist(); render(); showToast('Invitado agregado');
+    await persist(); openAddForms.delete('guests'); render(); showToast('Invitado agregado');
   }
   else if(action === 'edit-guest'){
     editingItem.guest = el.dataset.id;
