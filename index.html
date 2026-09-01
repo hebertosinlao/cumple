@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cumpleaños de León y Ramses</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap');
+
+  :root{
+    --paper:#FFFFFF;
+    --ink:#111111;
+    --muted:#6E6E6E;
+    --line:#E7E5E1;
+    --cobalt:#1E3A5F;
+    --poppy:#C0392B;
+    --mustard:#C9971F;
+    --forest:#1F5C4C;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Work Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:70px;
+  }
+  h1,h2,h3{
+    font-family:'Space Grotesk', sans-serif;
+    margin:0;
+  }
+  a{color:inherit;}
+
+  header.top{
+    padding:16px 18px 0;
+  }
+  .masthead-bar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding-bottom:12px;
+    border-bottom:1px solid var(--ink);
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--muted);
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  header.top h1{
+    font-size:38px;
+    line-height:0.95;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:-0.01em;
+    margin:20px 0 0;
+  }
+  header.top p{
+    margin:10px 0 18px;
+    font-size:14px;
+    color:var(--muted);
+    max-width:40ch;
+    line-height:1.5;
+  }
+  .who{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .who label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
+
+  select, input[type=text], input[type=number], input[type=date], input[type=time]{
+    font-family:'Work Sans', sans-serif;
+    font-size:14px;
+    padding:8px 10px;
+    border:1px solid var(--ink);
+    border-radius:0;
+    background:var(--paper);
+    color:var(--ink);
+  }
+  select:focus, input:focus{ outline:none; }
+
+  .tabs{
+    display:flex;
+    gap:10px;
+    padding:14px 18px;
+    border-bottom:1px solid var(--ink);
+    position:sticky;
+    top:0;
+    background:var(--paper);
+    z-index:10;
+    overflow-x:auto;
+  }
+  .tab{
+    padding:8px 14px;
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    cursor:pointer;
+    color:var(--ink);
+    border:1px solid var(--ink);
+    white-space:nowrap;
+  }
+  .tab:nth-child(1).active{ background:var(--cobalt); color:#fff; border-color:var(--cobalt); }
+  .tab:nth-child(2).active{ background:var(--mustard); color:#111; border-color:var(--mustard); }
+  .tab:nth-child(3).active{ background:var(--forest); color:#fff; border-color:var(--forest); }
+  .tab:nth-child(4).active{ background:var(--poppy); color:#fff; border-color:var(--poppy); }
+
+  main{padding:22px 18px 8px;max-width:640px;margin:0 auto;}
+
+  .day-divider{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin:38px 0 16px;
+    padding-bottom:8px;
+    border-bottom:2px solid var(--ink);
+  }
+  .day-divider:first-child{margin-top:0;}
+  .day-divider .dot{display:none;}
+  .day-divider h2{
+    font-size:15px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+  }
+  .day-divider span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+
+  .card{
+    margin-bottom:34px;
+  }
+  .cover{
+    width:100%;
+    aspect-ratio:4/3;
+    display:flex;
+    align-items:flex-end;
+    padding:16px;
+    color:#fff;
+    position:relative;
+    overflow:hidden;
+  }
+  .cover .cover-name{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:26px;
+    line-height:1.02;
+    text-transform:uppercase;
+    max-width:90%;
+  }
+  .cover .cover-time{
+    position:absolute;
+    top:14px;
+    left:16px;
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    background:rgba(0,0,0,.28);
+    padding:4px 9px;
+  }
+  .event-body{padding:14px 2px 0;}
+  .event-body h3{font-size:19px;font-weight:700;text-transform:uppercase;letter-spacing:-.01em;}
+  .event-meta{font-size:12px;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.04em;}
+  .event-notes{font-size:14px;color:var(--ink);margin-top:8px;line-height:1.5;}
+
+  .arrow-link{
+    display:inline-block;
+    font-family:'Work Sans', sans-serif;
+    font-weight:700;
+    font-size:12px;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    cursor:pointer;
+    border:none;
+    background:none;
+    color:var(--ink);
+    padding:0;
+  }
+  .arrow-link:after{content:" »";}
+
+  .rsvp-btn{
+    font-family:'Work Sans', sans-serif;
+    font-weight:700;
+    font-size:12px;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    padding:9px 16px;
+    border:1px solid var(--ink);
+    background:var(--paper);
+    color:var(--ink);
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .rsvp-btn.going{ background:var(--ink); color:#fff; }
+  .rsvp-btn:disabled{opacity:.35;cursor:default;}
+
+  .attendees{margin-top:12px;font-size:12px;color:var(--muted);}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;}
+  .row-start{display:flex;gap:14px;flex-wrap:wrap;align-items:center;}
+
+  .btn{
+    font-family:'Work Sans', sans-serif;
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+    padding:11px 18px;
+    border:1px solid var(--ink);
+    background:var(--ink);
+    color:#fff;
+    cursor:pointer;
+  }
+  .btn.secondary{background:var(--paper);color:var(--ink);}
+  .btn.small{padding:7px 13px;font-size:11px;}
+
+  .section-title{
+    font-size:12px;
+    margin-bottom:18px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--muted);
+    border-bottom:1px solid var(--ink);
+    padding-bottom:10px;
+  }
+  .form-grid{display:grid;gap:12px;margin-bottom:10px;}
+  .form-grid.two{grid-template-columns:1fr 1fr;}
+  .add-card{border-top:2px dashed var(--line);padding-top:24px;margin-top:6px;}
+
+  .empty{color:var(--muted);font-size:14px;padding:30px 0;text-align:center;}
+
+  .expense-row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:12px 0;border-bottom:1px solid var(--line);font-size:14px;gap:8px;
+  }
+  .expense-row:last-child{border-bottom:none;}
+  .expense-amt{font-weight:700;white-space:nowrap;font-family:'Space Grotesk', sans-serif;}
+  .split-tags{font-size:12px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.03em;}
+
+  .event-summary{
+    display:flex;justify-content:space-between;align-items:baseline;
+    border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:4px;
+  }
+  .event-summary h3{font-size:16px;font-weight:700;text-transform:uppercase;}
+
+  .balance-hero{
+    background:var(--ink);
+    color:#fff;
+    padding:26px 20px;
+    margin-bottom:34px;
+  }
+  .balance-hero .kicker{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#B9B9B9;margin-bottom:14px;}
+  .balance-row{
+    display:flex;justify-content:space-between;align-items:baseline;
+    font-size:15px;padding:9px 0;border-bottom:1px solid #3A3A3A;
+  }
+  .balance-row:last-of-type{border-bottom:none;}
+  .balance-row .amt{font-family:'Space Grotesk', sans-serif;font-weight:700;font-size:19px;}
+  .balance-row .amt.pos{color:#8FD9C4;}
+  .balance-row .amt.neg{color:#F0A6A6;}
+  .settle-line{
+    font-size:12px;color:#C9C9C9;padding:14px 0 0;margin-top:12px;
+    border-top:1px solid #3A3A3A;line-height:1.9;text-transform:uppercase;letter-spacing:.03em;
+  }
+
+  .guest-list{list-style:none;padding:0;margin:0;}
+  .guest-list li{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:14px 0;border-bottom:1px solid var(--line);font-size:15px;
+  }
+  .guest-list li:last-child{border-bottom:none;}
+
+  .lodging-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;}
+  .lodging-fields label{font-size:11px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;}
+
+  .icon-btn{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 6px;}
+  .icon-btn:hover{color:var(--poppy);}
+
+  .checkbox-list{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;}
+  .checkbox-list label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);}
+
+  details summary{list-style:none;cursor:pointer;}
+  details summary::-webkit-details-marker{display:none;}
+
+  .toast{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+    background:var(--ink);color:#fff;padding:10px 18px;font-size:13px;
+    opacity:0;pointer-events:none;transition:opacity .25s;
+  }
+  .toast.show{opacity:1;}
+  .loading{padding:60px 20px;text-align:center;color:var(--muted);}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="masthead-bar">
+    <span>Guía del cumple · privada</span>
+    <div class="who">
+      <label for="whoSelect">Viendo como</label>
+      <select id="whoSelect"></select>
+    </div>
+  </div>
+  <h1>Cumpleaños<br>de León y Ramses</h1>
+  <p>Itinerario, confirmaciones, gastos y hospedaje — todo en un mismo lugar, compartido con el grupo.</p>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-tab="itinerario">Itinerario</div>
+  <div class="tab" data-tab="gastos">Gastos</div>
+  <div class="tab" data-tab="hospedaje">Hospedaje</div>
+  <div class="tab" data-tab="invitados">Invitados</div>
+</div>
+
+<main id="app">
+  <div class="loading">Cargando...</div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA7Xqzvyxgaons2qETN4bUIhMtfGkuuVYM",
+  authDomain: "cumple-aa5b1.firebaseapp.com",
+  projectId: "cumple-aa5b1",
+  storageBucket: "cumple-aa5b1.firebasestorage.app",
+  messagingSenderId: "148377768935",
+  appId: "1:148377768935:web:efd2f0bc783319c9c02342"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+const docRef = doc(db, 'cumple', 'data');
+
+let state = { events: [], guests: [], rsvps: {}, expenses: [], lodging: {} };
+let myGuestId = null;
+let activeTab = 'itinerario';
+const COVER_COLORS = ['var(--cobalt)','var(--poppy)','var(--mustard)','var(--forest)'];
+
+function genId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function esc(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtMoney(n){ return '$' + (Math.round(n*100)/100).toLocaleString('es-MX'); }
+function coverColor(i){ return COVER_COLORS[i % COVER_COLORS.length]; }
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1600);
+}
+
+function loadAll(){
+  try{ myGuestId = localStorage.getItem('myGuestId') || null; }catch(e){ /* sin soporte de localStorage */ }
+  onSnapshot(docRef, (snap)=>{
+    if(snap.exists()){
+      const d = snap.data();
+      state = {
+        events: d.events || [],
+        guests: d.guests || [],
+        rsvps: d.rsvps || {},
+        expenses: d.expenses || [],
+        lodging: d.lodging || {}
+      };
+    } else {
+      state = { events: [], guests: [], rsvps: {}, expenses: [], lodging: {} };
+    }
+    render();
+  }, (err)=>{
+    console.error(err);
+    showToast('No se pudo conectar con la base de datos.');
+  });
+}
+
+async function persist(){
+  try{
+    await setDoc(docRef, state);
+  }catch(e){
+    showToast('No se pudo guardar. Intenta de nuevo.');
+    console.error(e);
+  }
+}
+
+function setMyGuestId(id){
+  myGuestId = id;
+  try{ localStorage.setItem('myGuestId', id || ''); }catch(e){ /* sin soporte de localStorage */ }
+  render();
+}
+
+// ---------- rendering ----------
+
+function render(){
+  renderWhoSelect();
+  const app = document.getElementById('app');
+  if(activeTab === 'itinerario') app.innerHTML = renderItinerario();
+  else if(activeTab === 'gastos') app.innerHTML = renderGastos();
+  else if(activeTab === 'hospedaje') app.innerHTML = renderHospedaje();
+  else app.innerHTML = renderInvitados();
+  attachHandlers();
+}
+
+function renderWhoSelect(){
+  const sel = document.getElementById('whoSelect');
+  const opts = ['<option value="">Elige tu nombre...</option>']
+    .concat(state.guests.map(g => `<option value="${g.id}" ${g.id===myGuestId?'selected':''}>${esc(g.name)}</option>`));
+  sel.innerHTML = opts.join('');
+}
+
+function groupByDay(events){
+  const days = {};
+  events.slice().sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time)).forEach(ev=>{
+    const key = ev.date || 'Sin fecha';
+    if(!days[key]) days[key] = [];
+    days[key].push(ev);
+  });
+  return days;
+}
+
+function renderItinerario(){
+  const days = groupByDay(state.events);
+  const dayKeys = Object.keys(days).sort();
+  let html = '';
+  if(dayKeys.length === 0){
+    html += `<div class="empty">Aún no hay eventos. Agrega el primero abajo.</div>`;
+  }
+  let cardIndex = 0;
+  dayKeys.forEach(day=>{
+    const dateLabel = day === 'Sin fecha' ? 'Sin fecha' : new Date(day+'T00:00:00').toLocaleDateString('es-MX', {weekday:'long', day:'numeric', month:'long'});
+    html += `<div class="day-divider"><h2>${esc(dateLabel)}</h2><span>${days[day].length} evento${days[day].length!==1?'s':''}</span></div>`;
+    days[day].forEach(ev=>{
+      const attendeeIds = state.rsvps[ev.id] ? Object.keys(state.rsvps[ev.id]).filter(g=>state.rsvps[ev.id][g]) : [];
+      const attendeeNames = attendeeIds.map(id => state.guests.find(g=>g.id===id)?.name).filter(Boolean);
+      const iAmGoing = myGuestId && attendeeIds.includes(myGuestId);
+      html += `
+      <div class="card">
+        <div class="cover" style="background:${coverColor(cardIndex)};">
+          ${ev.time ? `<span class="cover-time">${esc(ev.time)}</span>` : ''}
+          <span class="cover-name">${esc(ev.name)}</span>
+        </div>
+        <div class="event-body">
+          <div class="row">
+            <h3>${esc(ev.name)}</h3>
+            <button class="rsvp-btn ${iAmGoing?'going':''}" data-action="toggle-rsvp" data-event="${ev.id}" ${myGuestId?'':'disabled'}>
+              ${iAmGoing ? '✓ Voy' : 'Confirmar'}
+            </button>
+          </div>
+          <div class="event-meta">${esc(ev.location||'Sin ubicación')}</div>
+          ${ev.notes ? `<div class="event-notes">${esc(ev.notes)}</div>` : ''}
+          ${mapsBlockHtml(ev.location)}
+          <div class="attendees">
+            ${attendeeNames.length ? esc(attendeeNames.join(', ')) : 'Nadie ha confirmado aún'}
+          </div>
+          <div style="margin-top:14px;">
+            <button class="arrow-link" data-action="delete-event" data-event="${ev.id}" style="text-transform:none;">Eliminar evento</button>
+          </div>
+        </div>
+      </div>`;
+      cardIndex++;
+    });
+  });
+
+  html += `
+  <div class="add-card">
+    <div class="section-title">Agregar evento</div>
+    <div class="form-grid two">
+      <input type="text" id="newEvName" placeholder="Nombre (ej. Cena)" >
+      <input type="text" id="newEvLoc" placeholder="Dirección o link de Google Maps">
+      <input type="date" id="newEvDate">
+      <input type="time" id="newEvTime">
+    </div>
+    <input type="text" id="newEvNotes" placeholder="Notas (opcional)" style="width:100%;margin-bottom:14px;">
+    <button class="btn" data-action="add-event">Agregar al itinerario</button>
+  </div>`;
+  return html;
+}
+
+function renderGastos(){
+  if(state.events.length === 0){
+    return `<div class="empty">Agrega eventos primero en la pestaña Itinerario.</div>`;
+  }
+  const balances = {};
+  state.guests.forEach(g => balances[g.id] = 0);
+  state.expenses.forEach(ex=>{
+    const among = ex.splitAmong.length ? ex.splitAmong : [];
+    if(among.length === 0) return;
+    const share = ex.amount / among.length;
+    if(balances[ex.paidBy] !== undefined) balances[ex.paidBy] += ex.amount;
+    among.forEach(gid=>{
+      if(balances[gid] !== undefined) balances[gid] -= share;
+    });
+  });
+
+  let html = `<div class="balance-hero"><div class="kicker">Balance general</div>`;
+  state.guests.forEach(g=>{
+    const b = balances[g.id] || 0;
+    if(Math.abs(b) < 0.5) return;
+    html += `<div class="balance-row"><span>${esc(g.name)}</span><span class="amt ${b>0?'pos':'neg'}">${b>0?'le deben '+fmtMoney(b):'debe '+fmtMoney(-b)}</span></div>`;
+  });
+  if(state.guests.every(g=>Math.abs(balances[g.id]||0)<0.5)){
+    html += `<div class="balance-row"><span style="color:#C9C9C9;">Sin gastos registrados todavía.</span></div>`;
+  }
+  html += settlementSuggestions(balances);
+  html += `</div>`;
+
+  html += `<div class="section-title">Gastos por evento</div>`;
+  state.events.slice().sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).forEach(ev=>{
+    const evExpenses = state.expenses.filter(e=>e.eventId === ev.id);
+    const total = evExpenses.reduce((s,e)=>s+e.amount,0);
+    const attendeeIds = state.rsvps[ev.id] ? Object.keys(state.rsvps[ev.id]).filter(g=>state.rsvps[ev.id][g]) : [];
+    html += `
+    <div class="card">
+      <div class="event-summary">
+        <h3>${esc(ev.name)}</h3>
+        <span class="expense-amt">${fmtMoney(total)}</span>
+      </div>
+      ${evExpenses.map(ex=>{
+        const payer = state.guests.find(g=>g.id===ex.paidBy)?.name || '?';
+        const among = ex.splitAmong.map(id=>state.guests.find(g=>g.id===id)?.name).filter(Boolean);
+        return `<div class="expense-row">
+          <div>
+            <div>${esc(ex.desc)}</div>
+            <div class="split-tags">Pagó ${esc(payer)} · entre ${among.length} persona${among.length!==1?'s':''}</div>
+          </div>
+          <div class="row-start">
+            <span class="expense-amt">${fmtMoney(ex.amount)}</span>
+            <button class="icon-btn" data-action="delete-expense" data-expense="${ex.id}" title="Eliminar">✕</button>
+          </div>
+        </div>`;
+      }).join('') || '<div class="empty" style="padding:10px 0;">Sin gastos en este evento</div>'}
+      <details style="margin-top:14px;">
+        <summary class="arrow-link">Agregar gasto</summary>
+        <div class="form-grid two" style="margin-top:12px;">
+          <input type="text" placeholder="Descripción" id="exDesc-${ev.id}">
+          <input type="number" placeholder="Monto" id="exAmt-${ev.id}" min="0" step="0.01">
+        </div>
+        <select id="exPaidBy-${ev.id}" style="width:100%;margin-bottom:10px;">
+          <option value="">¿Quién pagó?</option>
+          ${state.guests.map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join('')}
+        </select>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Dividir entre</div>
+        <div class="checkbox-list">
+          ${state.guests.map(g=>`<label><input type="checkbox" class="split-${ev.id}" value="${g.id}" ${attendeeIds.includes(g.id)?'checked':''}> ${esc(g.name)}</label>`).join('')}
+        </div>
+        <button class="btn small" style="margin-top:12px;" data-action="add-expense" data-event="${ev.id}">Guardar gasto</button>
+      </details>
+    </div>`;
+  });
+  return html;
+}
+
+function settlementSuggestions(balances){
+  const creditors = [], debtors = [];
+  Object.keys(balances).forEach(id=>{
+    const b = balances[id];
+    if(b > 0.5) creditors.push({id, amt:b});
+    else if(b < -0.5) debtors.push({id, amt:-b});
+  });
+  creditors.sort((a,b)=>b.amt-a.amt);
+  debtors.sort((a,b)=>b.amt-a.amt);
+  const lines = [];
+  let ci=0, di=0;
+  while(ci<creditors.length && di<debtors.length){
+    const pay = Math.min(creditors[ci].amt, debtors[di].amt);
+    const fromName = state.guests.find(g=>g.id===debtors[di].id)?.name || '?';
+    const toName = state.guests.find(g=>g.id===creditors[ci].id)?.name || '?';
+    lines.push(`${fromName} → ${toName}: ${fmtMoney(pay)}`);
+    creditors[ci].amt -= pay;
+    debtors[di].amt -= pay;
+    if(creditors[ci].amt < 0.5) ci++;
+    if(debtors[di].amt < 0.5) di++;
+  }
+  if(lines.length === 0) return '';
+  return `<div class="settle-line">Para saldar cuentas<br>${lines.join('<br>')}</div>`;
+}
+
+function looksLikeUrl(s){ return /^https?:\/\//i.test((s||'').trim()); }
+function isShortLink(s){ return /goo\.gl\//i.test(s) || /maps\.app\.goo\.gl/i.test(s); }
+
+function extractMapQuery(input){
+  if(!input) return null;
+  const s = input.trim();
+  if(!looksLikeUrl(s)) return s;
+  if(isShortLink(s)) return null;
+  try{
+    let m = s.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if(m) return `${m[1]},${m[2]}`;
+    m = s.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+    if(m) return `${m[1]},${m[2]}`;
+    m = s.match(/\/place\/([^\/@]+)/);
+    if(m) return decodeURIComponent(m[1].replace(/\+/g,' '));
+    m = s.match(/[?&]q=([^&]+)/);
+    if(m) return decodeURIComponent(m[1].replace(/\+/g,' '));
+    return null;
+  }catch(e){ return null; }
+}
+
+function mapsBlockHtml(rawValue){
+  if(!rawValue || !rawValue.trim()) return '';
+  const s = rawValue.trim();
+  const isUrl = looksLikeUrl(s);
+  const query = extractMapQuery(s);
+  let html = '<div style="margin-top:12px;">';
+  if(isUrl){
+    html += `<a href="${esc(s)}" target="_blank" rel="noopener" class="arrow-link">Ver dirección en Google Maps</a>`;
+  }
+  if(query){
+    html += `<iframe src="https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=15&output=embed" style="width:100%;height:150px;border:1px solid var(--ink);margin-top:10px;" loading="lazy"></iframe>`;
+  } else if(isUrl && isShortLink(s)){
+    const safe = esc(s).replace(/'/g,'&#39;');
+    html += `
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;">
+        Es un link corto y no trae la ubicación exacta en la URL, así que no podemos generar la miniatura directo.
+        <div style="margin-top:8px;"><button type="button" class="btn small secondary" onclick="window.open('${safe}','_blank')">Abrir para copiar el link completo</button></div>
+        <div style="margin-top:8px;">Se abre el mapa en una pestaña nueva — copia la URL completa de la barra de direcciones (la que empieza con google.com/maps/place/...) y pégala aquí en lugar del link corto.</div>
+      </div>`;
+  } else if(isUrl){
+    html += `<div style="font-size:12px;color:var(--muted);margin-top:8px;">No se pudo generar la miniatura con este link. Prueba con la URL completa (con coordenadas o nombre del lugar) o escribe la dirección directamente.</div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderHospedaje(){
+  if(state.guests.length === 0){
+    return `<div class="empty">Agrega invitados primero en la pestaña Invitados.</div>`;
+  }
+  let html = `<div class="section-title">Llegadas y hospedaje</div>`;
+  state.guests.forEach(g=>{
+    const l = state.lodging[g.id] || {};
+    html += `
+    <div class="card">
+      <h3 style="font-size:16px;font-weight:700;text-transform:uppercase;margin-bottom:12px;">${esc(g.name)}</h3>
+      <div class="lodging-fields">
+        <div>
+          <label>Fecha de llegada</label>
+          <input type="date" value="${esc(l.arrivalDate||'')}" data-action="lodging-field" data-guest="${g.id}" data-field="arrivalDate" style="width:100%;">
+        </div>
+        <div>
+          <label>Hora de llegada</label>
+          <input type="time" value="${esc(l.arrivalTime||'')}" data-action="lodging-field" data-guest="${g.id}" data-field="arrivalTime" style="width:100%;">
+        </div>
+      </div>
+      <div class="lodging-fields" style="margin-top:10px;">
+        <div>
+          <label>Nombre del hospedaje (opcional)</label>
+          <input type="text" placeholder="Ej. Hotel Real" value="${esc(l.placeName||'')}" data-action="lodging-field" data-guest="${g.id}" data-field="placeName" style="width:100%;">
+        </div>
+        <div>
+          <label>Dirección o link de Google Maps</label>
+          <input type="text" placeholder="Pega el link o escribe la dirección" value="${esc(l.mapsLink||'')}" data-action="lodging-field" data-guest="${g.id}" data-field="mapsLink" style="width:100%;">
+        </div>
+      </div>
+      ${mapsBlockHtml(l.mapsLink)}
+    </div>`;
+  });
+  return html;
+}
+
+function renderInvitados(){
+  let html = `<div class="section-title">Invitados (${state.guests.length})</div>`;
+  html += `<ul class="guest-list">`;
+  html += state.guests.map(g=>`
+    <li>
+      <span>${esc(g.name)}${g.id===myGuestId?' <span style="color:var(--muted);font-size:11px;text-transform:uppercase;">(tú)</span>':''}</span>
+      <button class="icon-btn" data-action="delete-guest" data-guest="${g.id}" title="Eliminar">✕</button>
+    </li>`).join('') || '<li class="empty" style="border:none;">Sin invitados todavía</li>';
+  html += `</ul>`;
+  html += `
+  <div class="add-card">
+    <div class="row-start">
+      <input type="text" id="newGuestName" placeholder="Nombre del invitado" style="flex:1;">
+      <button class="btn" data-action="add-guest">Agregar</button>
+    </div>
+  </div>`;
+  return html;
+}
+
+// ---------- handlers ----------
+
+function attachHandlers(){
+  document.querySelectorAll('[data-action]').forEach(el=>{
+    if(el.dataset.bound) return;
+    el.dataset.bound = '1';
+    el.addEventListener('click', onAction);
+  });
+  document.querySelectorAll('[data-action="lodging-field"]').forEach(el=>{
+    if(el.dataset.boundBlur) return;
+    el.dataset.boundBlur = '1';
+    el.addEventListener('change', async ()=>{
+      const gid = el.dataset.guest, field = el.dataset.field;
+      if(!state.lodging[gid]) state.lodging[gid] = {};
+      state.lodging[gid][field] = el.value;
+      await persist();
+      showToast('Guardado');
+      render();
+    });
+  });
+}
+
+async function onAction(e){
+  const el = e.currentTarget;
+  const action = el.dataset.action;
+
+  if(action === 'add-event'){
+    const name = document.getElementById('newEvName').value.trim();
+    if(!name) return showToast('Escribe un nombre para el evento');
+    state.events.push({
+      id: genId(),
+      name,
+      location: document.getElementById('newEvLoc').value.trim(),
+      date: document.getElementById('newEvDate').value,
+      time: document.getElementById('newEvTime').value,
+      notes: document.getElementById('newEvNotes').value.trim()
+    });
+    await persist(); render(); showToast('Evento agregado');
+  }
+  else if(action === 'delete-event'){
+    if(!confirm('¿Eliminar este evento y sus gastos?')) return;
+    const id = el.dataset.event;
+    state.events = state.events.filter(ev=>ev.id!==id);
+    delete state.rsvps[id];
+    state.expenses = state.expenses.filter(ex=>ex.eventId!==id);
+    await persist(); render();
+  }
+  else if(action === 'toggle-rsvp'){
+    if(!myGuestId) return showToast('Elige tu nombre arriba primero');
+    const evId = el.dataset.event;
+    if(!state.rsvps[evId]) state.rsvps[evId] = {};
+    state.rsvps[evId][myGuestId] = !state.rsvps[evId][myGuestId];
+    await persist(); render();
+  }
+  else if(action === 'add-guest'){
+    const input = document.getElementById('newGuestName');
+    const name = input.value.trim();
+    if(!name) return showToast('Escribe un nombre');
+    state.guests.push({id: genId(), name});
+    await persist(); render(); showToast('Invitado agregado');
+  }
+  else if(action === 'delete-guest'){
+    if(!confirm('¿Eliminar a este invitado?')) return;
+    const id = el.dataset.guest;
+    state.guests = state.guests.filter(g=>g.id!==id);
+    Object.keys(state.rsvps).forEach(evId=> delete state.rsvps[evId][id]);
+    state.expenses.forEach(ex=>{ ex.splitAmong = ex.splitAmong.filter(g=>g!==id); });
+    delete state.lodging[id];
+    if(myGuestId === id) setMyGuestId(null);
+    await persist(); render();
+  }
+  else if(action === 'add-expense'){
+    const evId = el.dataset.event;
+    const desc = document.getElementById(`exDesc-${evId}`).value.trim();
+    const amt = parseFloat(document.getElementById(`exAmt-${evId}`).value);
+    const paidBy = document.getElementById(`exPaidBy-${evId}`).value;
+    const among = Array.from(document.querySelectorAll(`.split-${evId}:checked`)).map(c=>c.value);
+    if(!desc || !amt || amt<=0) return showToast('Falta descripción o monto');
+    if(!paidBy) return showToast('Selecciona quién pagó');
+    if(among.length===0) return showToast('Selecciona entre quién dividir');
+    state.expenses.push({id: genId(), eventId: evId, desc, amount: amt, paidBy, splitAmong: among});
+    await persist(); render(); showToast('Gasto agregado');
+  }
+  else if(action === 'delete-expense'){
+    const id = el.dataset.expense;
+    state.expenses = state.expenses.filter(ex=>ex.id!==id);
+    await persist(); render();
+  }
+}
+
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    activeTab = t.dataset.tab;
+    render();
+  });
+});
+
+document.getElementById('whoSelect').addEventListener('change', (e)=>{
+  setMyGuestId(e.target.value || null);
+});
+
+loadAll();
+</script>
+</body>
+</html>
