@@ -381,8 +381,17 @@ let suppressRender = false;
 let pendingRender = false;
 let generalMapInstance = null;
 let generalLayerGroups = { eventos: null, puntos: null, invitados: null };
-const BRIGHT_COLORS = ['var(--pink)','var(--orange)','var(--green)','var(--purple)'];
-const EVENT_COLORS = ['#E1122D','#65A30D','#4C6EF5','#D6199C'];
+const AVATAR_COLORS = ['#E63946','#F3722C','#43AA8B','#277DA1','#9D4EDD','#F72585','#4361EE','#06A77D'];
+const EVENT_COLORS = [
+  {bg:'#FF4D4D', fg:'#fff'},
+  {bg:'#FF9F1C', fg:'#111'},
+  {bg:'#FFD60A', fg:'#111'},
+  {bg:'#2ECC71', fg:'#fff'},
+  {bg:'#06D6A0', fg:'#111'},
+  {bg:'#4CC9F0', fg:'#111'},
+  {bg:'#7B61FF', fg:'#fff'},
+  {bg:'#FF5DA2', fg:'#fff'}
+];
 
 const SECTION_META = {
   events: {
@@ -402,11 +411,10 @@ const SECTION_META = {
 function genId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function esc(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmtMoney(n){ return '$' + (Math.round(n*100)/100).toLocaleString('es-MX'); }
-function pickColor(i){ return BRIGHT_COLORS[i % BRIGHT_COLORS.length]; }
 function avatarColor(id){
   let h = 0;
   for(const c of id) h = (h*31 + c.charCodeAt(0)) >>> 0;
-  return BRIGHT_COLORS[h % BRIGHT_COLORS.length];
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
 }
 function initials(name){
   const parts = name.trim().split(/\s+/);
@@ -520,7 +528,7 @@ function renderAttendeeVisual(attendeeIds){
 function renderItemCard(listKey, item, color){
   const isOpen = expandedIds.has(item.id);
   let html = `<div class="card">
-    <button class="event-chip-toggle" data-action="toggle-expand" data-id="${item.id}" style="${isOpen ? `background:${color};color:#fff;border-color:${color};` : `background:var(--paper);color:var(--ink);border-color:var(--ink);`}">${esc(item.name)}</button>`;
+    <button class="event-chip-toggle" data-action="toggle-expand" data-id="${item.id}" style="${isOpen ? `background:${color.bg};color:${color.fg};border-color:${color.bg};` : `background:var(--paper);color:var(--ink);border-color:var(--ink);`}">${esc(item.name)}</button>`;
   if(isOpen){
     const attendeeIds = state.rsvps[item.id] ? Object.keys(state.rsvps[item.id]).filter(g=>state.rsvps[item.id][g]) : [];
     const iAmGoing = myGuestId && attendeeIds.includes(myGuestId);
@@ -533,7 +541,7 @@ function renderItemCard(listKey, item, color){
       </div>
       ${item.time ? `<div class="event-meta">${esc(item.time)}</div>` : ''}
       ${item.notes ? `<div class="event-notes">${esc(item.notes)}</div>` : ''}
-      ${mapsBlockHtml(item.location, color)}
+      ${mapsBlockHtml(item.location, color.bg)}
       ${renderAttendeeVisual(attendeeIds)}
       <div class="row-start" style="margin-top:14px;">
         <button class="arrow-link" data-action="edit-item" data-list="${listKey}" data-id="${item.id}" style="text-transform:none;">Editar</button>
@@ -801,9 +809,9 @@ async function initGeneralMap(){
   const meetingColors = assignColors('meetingPoints');
 
   const eventItems = state.events.filter(it => it.location && it.location.trim())
-    .map(it => ({ id: it.id, name: it.name, location: it.location, category: 'eventos', color: eventColors[it.id] }));
+    .map(it => ({ id: it.id, name: it.name, location: it.location, category: 'eventos', color: eventColors[it.id].bg }));
   const meetingItems = state.meetingPoints.filter(it => it.location && it.location.trim())
-    .map(it => ({ id: it.id, name: it.name, location: it.location, category: 'puntos', color: meetingColors[it.id] }));
+    .map(it => ({ id: it.id, name: it.name, location: it.location, category: 'puntos', color: meetingColors[it.id].bg }));
   const guestItems = state.guests
     .map(g => ({ g, l: state.lodging[g.id] || {} }))
     .filter(x => (x.l.mapsLink || '').trim())
