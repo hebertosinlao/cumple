@@ -426,6 +426,9 @@ function initials(name){
   const parts = name.trim().split(/\s+/);
   return ((parts[0]?.[0]||'') + (parts[1]?.[0]||'')).toUpperCase();
 }
+function cleanInstagram(raw){
+  return (raw||'').replace(/[^a-zA-Z0-9_.]/g, '');
+}
 function assignColors(listKey){
   const days = groupByDay(state[listKey]);
   const dayKeys = Object.keys(days).sort();
@@ -1061,7 +1064,7 @@ function renderInvitados(){
       if(l.departureDate) departureParts.push(formatDateLabel(l.departureDate) + (l.departureTime ? ' · ' + l.departureTime : ''));
       html += `
       <div class="event-body">
-        ${g.instagram ? `<div class="event-meta" style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;"><span>${ICON_INSTAGRAM}</span> <a href="https://instagram.com/${esc(g.instagram.trim().replace(/^[@.\u00B7\u2022\s]+/,''))}" target="_blank" rel="noopener" style="color:var(--ink);text-decoration:underline;">@${esc(g.instagram.trim().replace(/^[@.\u00B7\u2022\s]+/,''))}</a></div>` : ''}
+        ${g.instagram ? `<div class="event-meta" style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;"><span>${ICON_INSTAGRAM}</span> <a href="https://instagram.com/${esc(cleanInstagram(g.instagram))}" target="_blank" rel="noopener" style="color:var(--ink);text-decoration:underline;">@${esc(cleanInstagram(g.instagram))}</a></div>` : ''}
         ${arrivalParts.length ? `<div class="event-meta">Llega: ${esc(arrivalParts[0])}</div>` : ''}
         ${departureParts.length ? `<div class="event-meta">Sale: ${esc(departureParts[0])}</div>` : ''}
         ${l.placeName ? `<div class="event-notes">${esc(l.placeName)}</div>` : ''}
@@ -1190,7 +1193,7 @@ async function onAction(e){
     const newName = document.getElementById(`editGuestName-${id}`).value.trim();
     if(!newName) return showToast('El nombre no puede quedar vacío');
     if(g) g.name = newName;
-    if(g) g.instagram = document.getElementById(`editInstagram-${id}`).value.trim().replace(/^[@.\u00B7\u2022\s]+/, '');
+    if(g) g.instagram = cleanInstagram(document.getElementById(`editInstagram-${id}`).value);
     if(!state.lodging[id]) state.lodging[id] = {};
     state.lodging[id].arrivalDate = document.getElementById(`editArrivalDate-${id}`).value;
     state.lodging[id].arrivalTime = document.getElementById(`editArrivalTime-${id}`).value;
