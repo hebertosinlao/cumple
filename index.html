@@ -1021,10 +1021,10 @@ function renderGuestEditForm(g){
   <div class="card">
     <div class="section-title">Editando</div>
     <input type="text" id="editGuestName-${g.id}" value="${esc(g.name)}" placeholder="Nombre" style="width:100%;margin-bottom:14px;">
-    <div style="display:flex;align-items:center;border:1px solid var(--ink);margin-bottom:14px;">
-      <span style="padding:0 0 0 10px;color:var(--muted);">${ICON_INSTAGRAM}</span>
-      <span style="padding:8px 4px 8px 6px;color:var(--muted);">@</span>
-      <input type="text" id="editInstagram-${g.id}" value="${esc(g.instagram||'')}" placeholder="usuario" style="flex:1;border:none;padding-left:0;">
+    <div style="display:flex;align-items:center;gap:10px;border:1px solid var(--ink);padding:8px 10px;margin-bottom:14px;">
+      <span style="color:var(--muted);display:flex;">${ICON_INSTAGRAM}</span>
+      <span style="color:var(--muted);">@</span>
+      <input type="text" id="editInstagram-${g.id}" value="${esc(g.instagram||'')}" placeholder="usuario" style="flex:1;border:none;padding:0;">
     </div>
     <div class="lodging-fields">
       <div>
