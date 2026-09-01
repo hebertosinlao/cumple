@@ -12,10 +12,12 @@
     --ink:#111111;
     --muted:#6E6E6E;
     --line:#E7E5E1;
-    --cobalt:#1E3A5F;
-    --poppy:#C0392B;
-    --mustard:#C9971F;
-    --forest:#1F5C4C;
+    --pink:#EC1F86;
+    --orange:#FF6A00;
+    --green:#22C55E;
+    --purple:#8B33F7;
+    --amber:#FFC300;
+    --sky:#00B8D9;
   }
   *{box-sizing:border-box;}
   body{
@@ -99,10 +101,12 @@
     border:1px solid var(--ink);
     white-space:nowrap;
   }
-  .tab:nth-child(1).active{ background:var(--cobalt); color:#fff; border-color:var(--cobalt); }
-  .tab:nth-child(2).active{ background:var(--mustard); color:#111; border-color:var(--mustard); }
-  .tab:nth-child(3).active{ background:var(--forest); color:#fff; border-color:var(--forest); }
-  .tab:nth-child(4).active{ background:var(--poppy); color:#fff; border-color:var(--poppy); }
+  .tab:nth-child(1).active{ background:var(--pink); color:#fff; border-color:var(--pink); }
+  .tab:nth-child(2).active{ background:var(--orange); color:#fff; border-color:var(--orange); }
+  .tab:nth-child(3).active{ background:var(--sky); color:#fff; border-color:var(--sky); }
+  .tab:nth-child(4).active{ background:var(--purple); color:#fff; border-color:var(--purple); }
+  .tab:nth-child(5).active{ background:var(--green); color:#fff; border-color:var(--green); }
+  .tab:nth-child(6).active{ background:var(--amber); color:#111; border-color:var(--amber); }
 
   main{padding:22px 18px 8px;max-width:640px;margin:0 auto;}
 
@@ -115,7 +119,6 @@
     border-bottom:2px solid var(--ink);
   }
   .day-divider:first-child{margin-top:0;}
-  .day-divider .dot{display:none;}
   .day-divider h2{
     font-size:15px;
     font-weight:700;
@@ -189,10 +192,20 @@
     cursor:pointer;
     white-space:nowrap;
   }
-  .rsvp-btn.going{ background:var(--ink); color:#fff; }
+  .rsvp-btn.going{ background:var(--green); color:#fff; border-color:var(--green); }
   .rsvp-btn:disabled{opacity:.35;cursor:default;}
 
-  .attendees{margin-top:12px;font-size:12px;color:var(--muted);}
+  .attend-row{display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap;}
+  .avatar-stack{display:flex;padding-left:8px;}
+  .avatar-chip{
+    width:28px;height:28px;border-radius:50%;
+    display:inline-flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:700;color:#fff;
+    margin-left:-8px;border:2px solid var(--paper);
+    font-family:'Space Grotesk', sans-serif;
+  }
+  .attend-count{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;}
+
   .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;}
   .row-start{display:flex;gap:14px;flex-wrap:wrap;align-items:center;}
 
@@ -254,8 +267,8 @@
   }
   .balance-row:last-of-type{border-bottom:none;}
   .balance-row .amt{font-family:'Space Grotesk', sans-serif;font-weight:700;font-size:19px;}
-  .balance-row .amt.pos{color:#8FD9C4;}
-  .balance-row .amt.neg{color:#F0A6A6;}
+  .balance-row .amt.pos{color:#4ADE80;}
+  .balance-row .amt.neg{color:#FF7FAE;}
   .settle-line{
     font-size:12px;color:#C9C9C9;padding:14px 0 0;margin-top:12px;
     border-top:1px solid #3A3A3A;line-height:1.9;text-transform:uppercase;letter-spacing:.03em;
@@ -272,7 +285,7 @@
   .lodging-fields label{font-size:11px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;}
 
   .icon-btn{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 6px;}
-  .icon-btn:hover{color:var(--poppy);}
+  .icon-btn:hover{color:var(--pink);}
 
   .checkbox-list{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;}
   .checkbox-list label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);}
@@ -288,6 +301,8 @@
   .toast.show{opacity:1;}
   .loading{padding:60px 20px;text-align:center;color:var(--muted);}
 </style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 
@@ -300,14 +315,16 @@
     </div>
   </div>
   <h1>Cumpleaños<br>de León y Ramses</h1>
-  <p>Itinerario, confirmaciones, gastos y hospedaje — todo en un mismo lugar, compartido con el grupo.</p>
+  <p>Eventos, puntos de reunión, invitados, itinerarios y gastos — todo en un mismo lugar, compartido con el grupo.</p>
 </header>
 
 <div class="tabs">
-  <div class="tab active" data-tab="itinerario">Itinerario</div>
-  <div class="tab" data-tab="gastos">Gastos</div>
-  <div class="tab" data-tab="hospedaje">Hospedaje</div>
+  <div class="tab active" data-tab="eventos">Eventos</div>
+  <div class="tab" data-tab="puntos">Puntos de reunión</div>
+  <div class="tab" data-tab="mapa">Mapa</div>
   <div class="tab" data-tab="invitados">Invitados</div>
+  <div class="tab" data-tab="itinerarios">Itinerarios</div>
+  <div class="tab" data-tab="gastos">Gastos</div>
 </div>
 
 <main id="app">
@@ -332,15 +349,41 @@ const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
 const docRef = doc(db, 'cumple', 'data');
 
-let state = { events: [], guests: [], rsvps: {}, expenses: [], lodging: {} };
+let state = { events: [], meetingPoints: [], guests: [], rsvps: {}, expenses: [], lodging: {} };
 let myGuestId = null;
-let activeTab = 'itinerario';
-const COVER_COLORS = ['var(--cobalt)','var(--poppy)','var(--mustard)','var(--forest)'];
+let activeTab = 'eventos';
+let editingItem = { events: null, meetingPoints: null, guest: null };
+let mapCounter = 0;
+const BRIGHT_COLORS = ['var(--pink)','var(--orange)','var(--green)','var(--purple)'];
+
+const SECTION_META = {
+  events: {
+    label: 'evento',
+    addTitle: 'Agregar evento',
+    addBtn: 'Agregar evento',
+    emptyMsg: 'Aún no hay eventos. Agrega el primero abajo.'
+  },
+  meetingPoints: {
+    label: 'punto de reunión',
+    addTitle: 'Agregar punto de reunión',
+    addBtn: 'Agregar punto de reunión',
+    emptyMsg: 'Aún no hay puntos de reunión. Agrega el primero abajo.'
+  }
+};
 
 function genId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function esc(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmtMoney(n){ return '$' + (Math.round(n*100)/100).toLocaleString('es-MX'); }
-function coverColor(i){ return COVER_COLORS[i % COVER_COLORS.length]; }
+function pickColor(i){ return BRIGHT_COLORS[i % BRIGHT_COLORS.length]; }
+function avatarColor(id){
+  let h = 0;
+  for(const c of id) h = (h*31 + c.charCodeAt(0)) >>> 0;
+  return BRIGHT_COLORS[h % BRIGHT_COLORS.length];
+}
+function initials(name){
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0]||'') + (parts[1]?.[0]||'')).toUpperCase();
+}
 function showToast(msg){
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -355,13 +398,14 @@ function loadAll(){
       const d = snap.data();
       state = {
         events: d.events || [],
+        meetingPoints: d.meetingPoints || [],
         guests: d.guests || [],
         rsvps: d.rsvps || {},
         expenses: d.expenses || [],
         lodging: d.lodging || {}
       };
     } else {
-      state = { events: [], guests: [], rsvps: {}, expenses: [], lodging: {} };
+      state = { events: [], meetingPoints: [], guests: [], rsvps: {}, expenses: [], lodging: {} };
     }
     render();
   }, (err)=>{
@@ -390,11 +434,15 @@ function setMyGuestId(id){
 function render(){
   renderWhoSelect();
   const app = document.getElementById('app');
-  if(activeTab === 'itinerario') app.innerHTML = renderItinerario();
-  else if(activeTab === 'gastos') app.innerHTML = renderGastos();
-  else if(activeTab === 'hospedaje') app.innerHTML = renderHospedaje();
-  else app.innerHTML = renderInvitados();
+  if(activeTab === 'eventos') app.innerHTML = renderEventSection('events');
+  else if(activeTab === 'puntos') app.innerHTML = renderEventSection('meetingPoints');
+  else if(activeTab === 'mapa') app.innerHTML = renderMapa();
+  else if(activeTab === 'invitados') app.innerHTML = renderInvitados();
+  else if(activeTab === 'itinerarios') app.innerHTML = renderItinerarios();
+  else app.innerHTML = renderGastos();
   attachHandlers();
+  initCroquisMaps();
+  initGeneralMap();
 }
 
 function renderWhoSelect(){
@@ -404,77 +452,128 @@ function renderWhoSelect(){
   sel.innerHTML = opts.join('');
 }
 
-function groupByDay(events){
+function groupByDay(items){
   const days = {};
-  events.slice().sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time)).forEach(ev=>{
-    const key = ev.date || 'Sin fecha';
+  items.slice().sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time)).forEach(it=>{
+    const key = it.date || 'Sin fecha';
     if(!days[key]) days[key] = [];
-    days[key].push(ev);
+    days[key].push(it);
   });
   return days;
 }
 
-function renderItinerario(){
-  const days = groupByDay(state.events);
+function renderAttendeeVisual(attendeeIds){
+  const total = state.guests.length;
+  const avatars = attendeeIds.map(id=>{
+    const g = state.guests.find(x=>x.id===id);
+    if(!g) return '';
+    return `<span class="avatar-chip" style="background:${avatarColor(g.id)}" title="${esc(g.name)}">${esc(initials(g.name))}</span>`;
+  }).join('');
+  return `
+  <div class="attend-row">
+    <div class="avatar-stack">${avatars}</div>
+    <span class="attend-count">${attendeeIds.length} de ${total} confirmaron</span>
+  </div>`;
+}
+
+function renderItemCard(listKey, item, cardIndex){
+  const attendeeIds = state.rsvps[item.id] ? Object.keys(state.rsvps[item.id]).filter(g=>state.rsvps[item.id][g]) : [];
+  const iAmGoing = myGuestId && attendeeIds.includes(myGuestId);
+  return `
+  <div class="card">
+    <div class="cover" style="background:${pickColor(cardIndex)};">
+      ${item.time ? `<span class="cover-time">${esc(item.time)}</span>` : ''}
+      <span class="cover-name">${esc(item.name)}</span>
+    </div>
+    <div class="event-body">
+      <div class="row">
+        <h3>${esc(item.name)}</h3>
+        <button class="rsvp-btn ${iAmGoing?'going':''}" data-action="toggle-rsvp" data-event="${item.id}" ${myGuestId?'':'disabled'}>
+          ${iAmGoing ? '✓ Voy' : 'Confirmar'}
+        </button>
+      </div>
+      <div class="event-meta">${esc(item.location||'Sin ubicación')}</div>
+      ${item.notes ? `<div class="event-notes">${esc(item.notes)}</div>` : ''}
+      ${mapsBlockHtml(item.location)}
+      ${renderAttendeeVisual(attendeeIds)}
+      <div class="row-start" style="margin-top:14px;">
+        <button class="arrow-link" data-action="edit-item" data-list="${listKey}" data-id="${item.id}" style="text-transform:none;">Editar</button>
+        <button class="arrow-link" data-action="delete-item" data-list="${listKey}" data-id="${item.id}" style="text-transform:none;">Eliminar</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderEditForm(listKey, item){
+  return `
+  <div class="card">
+    <div class="section-title">Editando</div>
+    <div class="form-grid two">
+      <input type="text" id="editName-${item.id}" value="${esc(item.name)}" placeholder="Nombre">
+      <input type="text" id="editLoc-${item.id}" value="${esc(item.location||'')}" placeholder="Dirección o link de Google Maps">
+      <input type="date" id="editDate-${item.id}" value="${esc(item.date||'')}">
+      <input type="time" id="editTime-${item.id}" value="${esc(item.time||'')}">
+    </div>
+    <input type="text" id="editNotes-${item.id}" value="${esc(item.notes||'')}" placeholder="Notas (opcional)" style="width:100%;margin-bottom:14px;">
+    <div class="row-start">
+      <button class="btn small" data-action="save-item" data-list="${listKey}" data-id="${item.id}">Guardar</button>
+      <button class="btn small secondary" data-action="cancel-item" data-list="${listKey}" data-id="${item.id}">Cancelar</button>
+    </div>
+  </div>`;
+}
+
+function renderEventSection(listKey){
+  const meta = SECTION_META[listKey];
+  const list = state[listKey];
+  const days = groupByDay(list);
   const dayKeys = Object.keys(days).sort();
   let html = '';
+
   if(dayKeys.length === 0){
-    html += `<div class="empty">Aún no hay eventos. Agrega el primero abajo.</div>`;
+    html += `<div class="empty">${meta.emptyMsg}</div>`;
   }
   let cardIndex = 0;
   dayKeys.forEach(day=>{
     const dateLabel = day === 'Sin fecha' ? 'Sin fecha' : new Date(day+'T00:00:00').toLocaleDateString('es-MX', {weekday:'long', day:'numeric', month:'long'});
-    html += `<div class="day-divider"><h2>${esc(dateLabel)}</h2><span>${days[day].length} evento${days[day].length!==1?'s':''}</span></div>`;
-    days[day].forEach(ev=>{
-      const attendeeIds = state.rsvps[ev.id] ? Object.keys(state.rsvps[ev.id]).filter(g=>state.rsvps[ev.id][g]) : [];
-      const attendeeNames = attendeeIds.map(id => state.guests.find(g=>g.id===id)?.name).filter(Boolean);
-      const iAmGoing = myGuestId && attendeeIds.includes(myGuestId);
-      html += `
-      <div class="card">
-        <div class="cover" style="background:${coverColor(cardIndex)};">
-          ${ev.time ? `<span class="cover-time">${esc(ev.time)}</span>` : ''}
-          <span class="cover-name">${esc(ev.name)}</span>
-        </div>
-        <div class="event-body">
-          <div class="row">
-            <h3>${esc(ev.name)}</h3>
-            <button class="rsvp-btn ${iAmGoing?'going':''}" data-action="toggle-rsvp" data-event="${ev.id}" ${myGuestId?'':'disabled'}>
-              ${iAmGoing ? '✓ Voy' : 'Confirmar'}
-            </button>
-          </div>
-          <div class="event-meta">${esc(ev.location||'Sin ubicación')}</div>
-          ${ev.notes ? `<div class="event-notes">${esc(ev.notes)}</div>` : ''}
-          ${mapsBlockHtml(ev.location)}
-          <div class="attendees">
-            ${attendeeNames.length ? esc(attendeeNames.join(', ')) : 'Nadie ha confirmado aún'}
-          </div>
-          <div style="margin-top:14px;">
-            <button class="arrow-link" data-action="delete-event" data-event="${ev.id}" style="text-transform:none;">Eliminar evento</button>
-          </div>
-        </div>
-      </div>`;
+    html += `<div class="day-divider"><h2>${esc(dateLabel)}</h2><span>${days[day].length} ${meta.label}${days[day].length!==1?'s':''}</span></div>`;
+    days[day].forEach(item=>{
+      html += (editingItem[listKey] === item.id) ? renderEditForm(listKey, item) : renderItemCard(listKey, item, cardIndex);
       cardIndex++;
     });
   });
 
   html += `
   <div class="add-card">
-    <div class="section-title">Agregar evento</div>
+    <div class="section-title">${meta.addTitle}</div>
     <div class="form-grid two">
-      <input type="text" id="newEvName" placeholder="Nombre (ej. Cena)" >
-      <input type="text" id="newEvLoc" placeholder="Dirección o link de Google Maps">
-      <input type="date" id="newEvDate">
-      <input type="time" id="newEvTime">
+      <input type="text" id="itemName" placeholder="Nombre (ej. Cena)" >
+      <input type="text" id="itemLoc" placeholder="Dirección o link de Google Maps">
+      <input type="date" id="itemDate">
+      <input type="time" id="itemTime">
     </div>
-    <input type="text" id="newEvNotes" placeholder="Notas (opcional)" style="width:100%;margin-bottom:14px;">
-    <button class="btn" data-action="add-event">Agregar al itinerario</button>
+    <input type="text" id="itemNotes" placeholder="Notas (opcional)" style="width:100%;margin-bottom:14px;">
+    <button class="btn" data-action="add-item" data-list="${listKey}">${meta.addBtn}</button>
+  </div>`;
+  return html;
+}
+
+function renderMapa(){
+  const anyLocation = [...state.events, ...state.meetingPoints].some(it => it.location && it.location.trim());
+  let html = `<div class="section-title">Mapa general</div>`;
+  if(!anyLocation){
+    html += `<div class="empty">Agrega ubicaciones a tus eventos o puntos de reunión para verlas aquí.</div>`;
+    return html;
+  }
+  html += `<div id="generalMap" class="croquis-map" style="width:100%;height:320px;border:1px solid var(--ink);background:#F2F2F0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Cargando mapa…</div>
+  <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:14px;">
+    <span style="color:#EC1F86;">●</span> Eventos &nbsp; <span style="color:#FF6A00;">●</span> Puntos de reunión
   </div>`;
   return html;
 }
 
 function renderGastos(){
   if(state.events.length === 0){
-    return `<div class="empty">Agrega eventos primero en la pestaña Itinerario.</div>`;
+    return `<div class="empty">Agrega eventos primero en la pestaña Eventos.</div>`;
   }
   const balances = {};
   state.guests.forEach(g => balances[g.id] = 0);
@@ -574,6 +673,144 @@ function settlementSuggestions(balances){
 function looksLikeUrl(s){ return /^https?:\/\//i.test((s||'').trim()); }
 function isShortLink(s){ return /goo\.gl\//i.test(s) || /maps\.app\.goo\.gl/i.test(s); }
 
+async function initCroquisMaps(){
+  if(typeof L === 'undefined') return;
+  const els = document.querySelectorAll('.croquis-map:not([data-inited])');
+  for(const el of els){
+    el.dataset.inited = '1';
+    const query = el.dataset.query;
+    const coordMatch = query.match(/^(-?\d+\.\d+),\s*(-?\d+\.\d+)$/);
+    if(coordMatch){
+      buildLeafletMap(el, parseFloat(coordMatch[1]), parseFloat(coordMatch[2]));
+      continue;
+    }
+    try{
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      if(data && data[0]){
+        buildLeafletMap(el, parseFloat(data[0].lat), parseFloat(data[0].lon));
+      } else {
+        el.style.background = 'none';
+        el.textContent = 'No se encontró el lugar para dibujar el mapa.';
+      }
+    }catch(e){
+      el.style.background = 'none';
+      el.textContent = 'No se pudo cargar el mapa.';
+    }
+  }
+}
+
+function popupAttendeesHtml(attendeeIds){
+  const total = state.guests.length;
+  const chips = attendeeIds.map(id=>{
+    const g = state.guests.find(x=>x.id===id);
+    if(!g) return '';
+    return `<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:${avatarColor(g.id)};color:#fff;font-size:9px;font-weight:700;margin-right:3px;font-family:'Space Grotesk',sans-serif;">${esc(initials(g.name))}</span>`;
+  }).join('');
+  return `<div style="margin-top:6px;font-size:11px;color:#6E6E6E;text-transform:uppercase;letter-spacing:.03em;">${attendeeIds.length} de ${total} confirmaron</div><div style="margin-top:4px;">${chips || '<span style="font-size:11px;color:#6E6E6E;">Nadie ha confirmado aún</span>'}</div>`;
+}
+
+function formatDateLabel(dateStr){
+  try{ return new Date(dateStr+'T00:00:00').toLocaleDateString('es-MX', {day:'numeric', month:'short'}); }catch(e){ return dateStr; }
+}
+
+async function initGeneralMap(){
+  if(typeof L === 'undefined') return;
+  const el = document.getElementById('generalMap');
+  if(!el || el.dataset.inited) return;
+  el.dataset.inited = '1';
+
+  const items = [
+    ...state.events.map(it => ({ ...it, kind:'evento', color:'#EC1F86' })),
+    ...state.meetingPoints.map(it => ({ ...it, kind:'punto de reunión', color:'#FF6A00' }))
+  ].filter(it => it.location && it.location.trim());
+
+  if(items.length === 0){
+    el.style.background = 'none';
+    el.textContent = 'Agrega ubicaciones a tus eventos o puntos de reunión para verlas aquí.';
+    return;
+  }
+
+  const points = [];
+  for(const it of items){
+    const q = extractMapQuery(it.location);
+    if(!q) continue;
+    let lat, lng;
+    const coordMatch = q.match(/^(-?\d+\.\d+),\s*(-?\d+\.\d+)$/);
+    if(coordMatch){
+      lat = parseFloat(coordMatch[1]); lng = parseFloat(coordMatch[2]);
+    } else {
+      try{
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        if(data && data[0]){ lat = parseFloat(data[0].lat); lng = parseFloat(data[0].lon); }
+      }catch(e){ /* se omite este punto */ }
+    }
+    if(lat !== undefined && lng !== undefined){
+      points.push({ lat, lng, id: it.id, name: it.name, kind: it.kind, color: it.color, date: it.date, time: it.time, location: it.location });
+    }
+  }
+
+  if(points.length === 0){
+    el.style.background = 'none';
+    el.textContent = 'No se pudieron ubicar las direcciones en el mapa.';
+    return;
+  }
+
+  el.textContent = '';
+  el.style.background = 'none';
+  const map = L.map(el, { zoomControl:false, scrollWheelZoom:false });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap, © CARTO',
+    maxZoom: 19,
+    subdomains: 'abcd'
+  }).addTo(map);
+
+  const bounds = [];
+  points.forEach(p=>{
+    const icon = L.divIcon({
+      className: 'croquis-pin',
+      html: `<div style="width:14px;height:14px;border-radius:50%;background:${p.color};border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35);"></div>`,
+      iconSize: [14,14],
+      iconAnchor: [7,7]
+    });
+    const attendeeIds = state.rsvps[p.id] ? Object.keys(state.rsvps[p.id]).filter(g=>state.rsvps[p.id][g]) : [];
+    const metaParts = [];
+    if(p.date) metaParts.push(formatDateLabel(p.date));
+    if(p.time) metaParts.push(p.time);
+    const metaLine = metaParts.join(' · ');
+    const popupHtml = `
+      <div style="font-family:'Work Sans',sans-serif;min-width:170px;">
+        <strong style="font-family:'Space Grotesk',sans-serif;text-transform:uppercase;font-size:13px;">${esc(p.name)}</strong><br>
+        <span style="font-size:11px;color:#6E6E6E;text-transform:uppercase;">${esc(p.kind)}${metaLine ? ' · ' + esc(metaLine) : ''}</span>
+        ${p.location ? `<div style="font-size:11px;color:#6E6E6E;margin-top:4px;">${esc(p.location)}</div>` : ''}
+        ${popupAttendeesHtml(attendeeIds)}
+      </div>`;
+    L.marker([p.lat, p.lng], {icon}).addTo(map).bindPopup(popupHtml);
+    bounds.push([p.lat, p.lng]);
+  });
+  if(bounds.length === 1) map.setView(bounds[0], 14);
+  else map.fitBounds(bounds, { padding:[24,24] });
+}
+
+function buildLeafletMap(el, lat, lng){
+  el.textContent = '';
+  el.style.background = 'none';
+  const map = L.map(el, { zoomControl:false, scrollWheelZoom:false }).setView([lat, lng], 15);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap, © CARTO',
+    maxZoom: 19,
+    subdomains: 'abcd'
+  }).addTo(map);
+  const icon = L.divIcon({
+    className: 'croquis-pin',
+    html: '<div style="width:14px;height:14px;border-radius:50%;background:#EC1F86;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35);"></div>',
+    iconSize: [14,14],
+    iconAnchor: [7,7]
+  });
+  L.marker([lat, lng], {icon}).addTo(map);
+}
+
 function extractMapQuery(input){
   if(!input) return null;
   const s = input.trim();
@@ -602,7 +839,8 @@ function mapsBlockHtml(rawValue){
     html += `<a href="${esc(s)}" target="_blank" rel="noopener" class="arrow-link">Ver dirección en Google Maps</a>`;
   }
   if(query){
-    html += `<iframe src="https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=15&output=embed" style="width:100%;height:150px;border:1px solid var(--ink);margin-top:10px;" loading="lazy"></iframe>`;
+    const mapId = 'map-' + (mapCounter++);
+    html += `<div class="croquis-map" id="${mapId}" data-query="${esc(query)}" style="width:100%;height:160px;border:1px solid var(--ink);margin-top:10px;background:#F2F2F0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Cargando mapa…</div>`;
   } else if(isUrl && isShortLink(s)){
     const safe = esc(s).replace(/'/g,'&#39;');
     html += `
@@ -618,7 +856,7 @@ function mapsBlockHtml(rawValue){
   return html;
 }
 
-function renderHospedaje(){
+function renderItinerarios(){
   if(state.guests.length === 0){
     return `<div class="empty">Agrega invitados primero en la pestaña Invitados.</div>`;
   }
@@ -640,6 +878,16 @@ function renderHospedaje(){
       </div>
       <div class="lodging-fields" style="margin-top:10px;">
         <div>
+          <label>Fecha de salida</label>
+          <input type="date" value="${esc(l.departureDate||'')}" data-action="lodging-field" data-guest="${g.id}" data-field="departureDate" style="width:100%;">
+        </div>
+        <div>
+          <label>Hora de salida</label>
+          <input type="time" value="${esc(l.departureTime||'')}" data-action="lodging-field" data-guest="${g.id}" data-field="departureTime" style="width:100%;">
+        </div>
+      </div>
+      <div class="lodging-fields" style="margin-top:10px;">
+        <div>
           <label>Nombre del hospedaje (opcional)</label>
           <input type="text" placeholder="Ej. Hotel Real" value="${esc(l.placeName||'')}" data-action="lodging-field" data-guest="${g.id}" data-field="placeName" style="width:100%;">
         </div>
@@ -657,11 +905,24 @@ function renderHospedaje(){
 function renderInvitados(){
   let html = `<div class="section-title">Invitados (${state.guests.length})</div>`;
   html += `<ul class="guest-list">`;
-  html += state.guests.map(g=>`
-    <li>
+  html += state.guests.map(g=>{
+    if(editingItem.guest === g.id){
+      return `<li>
+        <input type="text" id="editGuestName-${g.id}" value="${esc(g.name)}" style="flex:1;margin-right:10px;">
+        <div class="row-start">
+          <button class="icon-btn" data-action="save-guest" data-guest="${g.id}" title="Guardar">✓</button>
+          <button class="icon-btn" data-action="cancel-guest" data-guest="${g.id}" title="Cancelar">✕</button>
+        </div>
+      </li>`;
+    }
+    return `<li>
       <span>${esc(g.name)}${g.id===myGuestId?' <span style="color:var(--muted);font-size:11px;text-transform:uppercase;">(tú)</span>':''}</span>
-      <button class="icon-btn" data-action="delete-guest" data-guest="${g.id}" title="Eliminar">✕</button>
-    </li>`).join('') || '<li class="empty" style="border:none;">Sin invitados todavía</li>';
+      <div class="row-start">
+        <button class="icon-btn" data-action="edit-guest" data-guest="${g.id}" title="Editar">✎</button>
+        <button class="icon-btn" data-action="delete-guest" data-guest="${g.id}" title="Eliminar">✕</button>
+      </div>
+    </li>`;
+  }).join('') || '<li class="empty" style="border:none;">Sin invitados todavía</li>';
   html += `</ul>`;
   html += `
   <div class="add-card">
@@ -699,32 +960,55 @@ async function onAction(e){
   const el = e.currentTarget;
   const action = el.dataset.action;
 
-  if(action === 'add-event'){
-    const name = document.getElementById('newEvName').value.trim();
-    if(!name) return showToast('Escribe un nombre para el evento');
-    state.events.push({
+  if(action === 'add-item'){
+    const listKey = el.dataset.list;
+    const name = document.getElementById('itemName').value.trim();
+    if(!name) return showToast('Escribe un nombre');
+    state[listKey].push({
       id: genId(),
       name,
-      location: document.getElementById('newEvLoc').value.trim(),
-      date: document.getElementById('newEvDate').value,
-      time: document.getElementById('newEvTime').value,
-      notes: document.getElementById('newEvNotes').value.trim()
+      location: document.getElementById('itemLoc').value.trim(),
+      date: document.getElementById('itemDate').value,
+      time: document.getElementById('itemTime').value,
+      notes: document.getElementById('itemNotes').value.trim()
     });
-    await persist(); render(); showToast('Evento agregado');
+    await persist(); render(); showToast('Agregado');
   }
-  else if(action === 'delete-event'){
-    if(!confirm('¿Eliminar este evento y sus gastos?')) return;
-    const id = el.dataset.event;
-    state.events = state.events.filter(ev=>ev.id!==id);
+  else if(action === 'delete-item'){
+    const listKey = el.dataset.list, id = el.dataset.id;
+    if(!confirm('¿Eliminar esto?')) return;
+    state[listKey] = state[listKey].filter(x=>x.id!==id);
     delete state.rsvps[id];
-    state.expenses = state.expenses.filter(ex=>ex.eventId!==id);
+    if(listKey === 'events'){ state.expenses = state.expenses.filter(ex=>ex.eventId!==id); }
     await persist(); render();
+  }
+  else if(action === 'edit-item'){
+    editingItem[el.dataset.list] = el.dataset.id;
+    render();
+  }
+  else if(action === 'cancel-item'){
+    editingItem[el.dataset.list] = null;
+    render();
+  }
+  else if(action === 'save-item'){
+    const listKey = el.dataset.list, id = el.dataset.id;
+    const item = state[listKey].find(x=>x.id===id);
+    if(item){
+      const newName = document.getElementById(`editName-${id}`).value.trim();
+      item.name = newName || item.name;
+      item.location = document.getElementById(`editLoc-${id}`).value.trim();
+      item.date = document.getElementById(`editDate-${id}`).value;
+      item.time = document.getElementById(`editTime-${id}`).value;
+      item.notes = document.getElementById(`editNotes-${id}`).value.trim();
+    }
+    editingItem[listKey] = null;
+    await persist(); render(); showToast('Guardado');
   }
   else if(action === 'toggle-rsvp'){
     if(!myGuestId) return showToast('Elige tu nombre arriba primero');
-    const evId = el.dataset.event;
-    if(!state.rsvps[evId]) state.rsvps[evId] = {};
-    state.rsvps[evId][myGuestId] = !state.rsvps[evId][myGuestId];
+    const id = el.dataset.event;
+    if(!state.rsvps[id]) state.rsvps[id] = {};
+    state.rsvps[id][myGuestId] = !state.rsvps[id][myGuestId];
     await persist(); render();
   }
   else if(action === 'add-guest'){
@@ -734,11 +1018,28 @@ async function onAction(e){
     state.guests.push({id: genId(), name});
     await persist(); render(); showToast('Invitado agregado');
   }
+  else if(action === 'edit-guest'){
+    editingItem.guest = el.dataset.guest;
+    render();
+  }
+  else if(action === 'cancel-guest'){
+    editingItem.guest = null;
+    render();
+  }
+  else if(action === 'save-guest'){
+    const id = el.dataset.guest;
+    const val = document.getElementById(`editGuestName-${id}`).value.trim();
+    if(!val) return showToast('El nombre no puede quedar vacío');
+    const g = state.guests.find(x=>x.id===id);
+    if(g) g.name = val;
+    editingItem.guest = null;
+    await persist(); render(); showToast('Guardado');
+  }
   else if(action === 'delete-guest'){
     if(!confirm('¿Eliminar a este invitado?')) return;
     const id = el.dataset.guest;
     state.guests = state.guests.filter(g=>g.id!==id);
-    Object.keys(state.rsvps).forEach(evId=> delete state.rsvps[evId][id]);
+    Object.keys(state.rsvps).forEach(itemId=> delete state.rsvps[itemId][id]);
     state.expenses.forEach(ex=>{ ex.splitAmong = ex.splitAmong.filter(g=>g!==id); });
     delete state.lodging[id];
     if(myGuestId === id) setMyGuestId(null);
