@@ -105,8 +105,7 @@
   .tab:nth-child(2).active{ background:var(--orange); color:#fff; border-color:var(--orange); }
   .tab:nth-child(3).active{ background:var(--sky); color:#fff; border-color:var(--sky); }
   .tab:nth-child(4).active{ background:var(--purple); color:#fff; border-color:var(--purple); }
-  .tab:nth-child(5).active{ background:var(--green); color:#fff; border-color:var(--green); }
-  .tab:nth-child(6).active{ background:var(--amber); color:#111; border-color:var(--amber); }
+  .tab:nth-child(5).active{ background:var(--amber); color:#111; border-color:var(--amber); }
 
   main{padding:22px 18px 8px;max-width:640px;margin:0 auto;}
 
@@ -339,7 +338,7 @@
     </div>
   </div>
   <h1>Cumpleaños<br>de León y Ramses</h1>
-  <p>Eventos, puntos de reunión, invitados, itinerarios y gastos — todo en un mismo lugar, compartido con el grupo.</p>
+  <p>Eventos, puntos de reunión, invitados y gastos — todo en un mismo lugar, compartido con el grupo.</p>
 </header>
 
 <div class="tabs">
@@ -347,7 +346,6 @@
   <div class="tab" data-tab="puntos">Puntos de reunión</div>
   <div class="tab" data-tab="mapa">Mapa</div>
   <div class="tab" data-tab="invitados">Invitados</div>
-  <div class="tab" data-tab="itinerarios">Itinerarios</div>
   <div class="tab" data-tab="gastos">Gastos</div>
 </div>
 
@@ -379,6 +377,10 @@ let activeTab = 'eventos';
 let editingItem = { events: null, meetingPoints: null, guest: null };
 let expandedIds = new Set();
 let mapCounter = 0;
+let suppressRender = false;
+let pendingRender = false;
+let generalMapInstance = null;
+let generalLayerGroups = { eventos: null, puntos: null, invitados: null };
 const BRIGHT_COLORS = ['var(--pink)','var(--orange)','var(--green)','var(--purple)'];
 const EVENT_COLORS = ['#E1122D','#65A30D','#4C6EF5','#D6199C'];
 
@@ -471,13 +473,13 @@ function setMyGuestId(id){
 // ---------- rendering ----------
 
 function render(){
+  if(suppressRender){ pendingRender = true; return; }
   renderWhoSelect();
   const app = document.getElementById('app');
   if(activeTab === 'eventos') app.innerHTML = renderEventSection('events');
   else if(activeTab === 'puntos') app.innerHTML = renderEventSection('meetingPoints');
   else if(activeTab === 'mapa') app.innerHTML = renderMapa();
   else if(activeTab === 'invitados') app.innerHTML = renderInvitados();
-  else if(activeTab === 'itinerarios') app.innerHTML = renderItinerarios();
   else app.innerHTML = renderGastos();
   attachHandlers();
   initCroquisMaps();
@@ -596,15 +598,22 @@ function renderEventSection(listKey){
 }
 
 function renderMapa(){
-  const anyLocation = [...state.events, ...state.meetingPoints].some(it => it.location && it.location.trim());
+  const anyEventLoc = [...state.events, ...state.meetingPoints].some(it => it.location && it.location.trim());
+  const anyGuestLoc = state.guests.some(g => (state.lodging[g.id]?.mapsLink || '').trim());
   let html = `<div class="section-title">Mapa general</div>`;
-  if(!anyLocation){
-    html += `<div class="empty">Agrega ubicaciones a tus eventos o puntos de reunión para verlas aquí.</div>`;
+  if(!anyEventLoc && !anyGuestLoc){
+    html += `<div class="empty">Agrega ubicaciones a tus eventos, puntos de reunión o invitados para verlas aquí.</div>`;
     return html;
   }
-  html += `<div id="generalMap" style="width:100%;height:320px;border:1px solid var(--ink);background:#F2F2F0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Cargando mapa…</div>
+  html += `
+  <div class="row-start" style="margin-bottom:14px;">
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;text-transform:uppercase;letter-spacing:.03em;"><input type="checkbox" data-action="toggle-layer" data-layer="eventos" checked> Eventos</label>
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;text-transform:uppercase;letter-spacing:.03em;"><input type="checkbox" data-action="toggle-layer" data-layer="puntos" checked> Puntos de reunión</label>
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;text-transform:uppercase;letter-spacing:.03em;"><input type="checkbox" data-action="toggle-layer" data-layer="invitados" checked> Invitados</label>
+  </div>
+  <div id="generalMap" style="width:100%;height:320px;border:1px solid var(--ink);background:#F2F2F0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Cargando mapa…</div>
   <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:14px;">
-    Cada pin usa el color de su evento o punto de reunión.
+    Cada pin usa el color de su evento, punto de reunión o invitado.
   </div>`;
   return html;
 }
@@ -767,6 +776,16 @@ function formatDateLabel(dateStr){
   try{ return new Date(dateStr+'T00:00:00').toLocaleDateString('es-MX', {day:'numeric', month:'short'}); }catch(e){ return dateStr; }
 }
 
+function popupGuestHtml(name, l){
+  const parts = [];
+  if(l.arrivalDate) parts.push('Llega ' + formatDateLabel(l.arrivalDate) + (l.arrivalTime ? ' · ' + l.arrivalTime : ''));
+  if(l.departureDate) parts.push('Sale ' + formatDateLabel(l.departureDate) + (l.departureTime ? ' · ' + l.departureTime : ''));
+  return `<div style="font-family:'Work Sans',sans-serif;min-width:170px;">
+    <strong style="font-family:'Space Grotesk',sans-serif;text-transform:uppercase;font-size:13px;">${esc(name)}</strong>
+    ${parts.length ? `<div style="font-size:11px;color:#6E6E6E;margin-top:4px;">${parts.map(p=>esc(p)).join('<br>')}</div>` : ''}
+  </div>`;
+}
+
 async function initGeneralMap(){
   const el = document.getElementById('generalMap');
   if(!el || el.dataset.inited) return;
@@ -780,19 +799,26 @@ async function initGeneralMap(){
 
   const eventColors = assignColors('events');
   const meetingColors = assignColors('meetingPoints');
-  const items = [
-    ...state.events.map(it => ({ ...it, kind:'evento', color: eventColors[it.id] })),
-    ...state.meetingPoints.map(it => ({ ...it, kind:'punto de reunión', color: meetingColors[it.id] }))
-  ].filter(it => it.location && it.location.trim());
 
-  if(items.length === 0){
+  const eventItems = state.events.filter(it => it.location && it.location.trim())
+    .map(it => ({ id: it.id, name: it.name, location: it.location, category: 'eventos', color: eventColors[it.id] }));
+  const meetingItems = state.meetingPoints.filter(it => it.location && it.location.trim())
+    .map(it => ({ id: it.id, name: it.name, location: it.location, category: 'puntos', color: meetingColors[it.id] }));
+  const guestItems = state.guests
+    .map(g => ({ g, l: state.lodging[g.id] || {} }))
+    .filter(x => (x.l.mapsLink || '').trim())
+    .map(x => ({ id: x.g.id, name: x.g.name, location: x.l.mapsLink, category: 'invitados', color: avatarColor(x.g.id), lodging: x.l }));
+
+  const allItems = [...eventItems, ...meetingItems, ...guestItems];
+
+  if(allItems.length === 0){
     el.style.background = 'none';
-    el.textContent = 'Agrega ubicaciones a tus eventos o puntos de reunión para verlas aquí.';
+    el.textContent = 'Agrega ubicaciones a tus eventos, puntos de reunión o invitados para verlas aquí.';
     return;
   }
 
   const points = [];
-  for(const it of items){
+  for(const it of allItems){
     const q = extractMapQuery(it.location);
     if(!q) continue;
     let lat, lng;
@@ -806,7 +832,7 @@ async function initGeneralMap(){
       }catch(e){ /* se omite este punto */ }
     }
     if(lat !== undefined && lng !== undefined){
-      points.push({ lat, lng, id: it.id, name: it.name, kind: it.kind, color: it.color, date: it.date, time: it.time, location: it.location });
+      points.push({ ...it, lat, lng });
     }
   }
 
@@ -825,6 +851,7 @@ async function initGeneralMap(){
     subdomains: 'abcd'
   }).addTo(map);
 
+  const layerGroups = { eventos: L.layerGroup(), puntos: L.layerGroup(), invitados: L.layerGroup() };
   const bounds = [];
   points.forEach(p=>{
     const icon = L.divIcon({
@@ -833,21 +860,26 @@ async function initGeneralMap(){
       iconSize: [14,14],
       iconAnchor: [7,7]
     });
-    const attendeeIds = state.rsvps[p.id] ? Object.keys(state.rsvps[p.id]).filter(g=>state.rsvps[p.id][g]) : [];
-    const metaParts = [];
-    if(p.date) metaParts.push(formatDateLabel(p.date));
-    if(p.time) metaParts.push(p.time);
-    const metaLine = metaParts.join(' · ');
-    const popupHtml = `
-      <div style="font-family:'Work Sans',sans-serif;min-width:170px;">
-        <strong style="font-family:'Space Grotesk',sans-serif;text-transform:uppercase;font-size:13px;">${esc(p.name)}</strong><br>
-        <span style="font-size:11px;color:#6E6E6E;text-transform:uppercase;">${esc(p.kind)}${metaLine ? ' · ' + esc(metaLine) : ''}</span>
-        ${p.location ? `<div style="font-size:11px;color:#6E6E6E;margin-top:4px;">${esc(p.location)}</div>` : ''}
-        ${popupAttendeesHtml(attendeeIds)}
-      </div>`;
-    L.marker([p.lat, p.lng], {icon}).addTo(map).bindPopup(popupHtml);
+    let popupHtml;
+    if(p.category === 'invitados'){
+      popupHtml = popupGuestHtml(p.name, p.lodging || {});
+    } else {
+      const attendeeIds = state.rsvps[p.id] ? Object.keys(state.rsvps[p.id]).filter(g=>state.rsvps[p.id][g]) : [];
+      popupHtml = `
+        <div style="font-family:'Work Sans',sans-serif;min-width:170px;">
+          <strong style="font-family:'Space Grotesk',sans-serif;text-transform:uppercase;font-size:13px;">${esc(p.name)}</strong>
+          ${popupAttendeesHtml(attendeeIds)}
+        </div>`;
+    }
+    const marker = L.marker([p.lat, p.lng], {icon}).bindPopup(popupHtml);
+    layerGroups[p.category].addLayer(marker);
     bounds.push([p.lat, p.lng]);
   });
+
+  Object.values(layerGroups).forEach(lg => lg.addTo(map));
+  generalMapInstance = map;
+  generalLayerGroups = layerGroups;
+
   if(bounds.length === 1) map.setView(bounds[0], 14);
   else map.fitBounds(bounds, { padding:[24,24] });
 }
@@ -916,74 +948,75 @@ function mapsBlockHtml(rawValue, color){
   return html;
 }
 
-function renderItinerarios(){
-  if(state.guests.length === 0){
-    return `<div class="empty">Agrega invitados primero en la pestaña Invitados.</div>`;
-  }
-  let html = `<div class="section-title">Llegadas y hospedaje</div>`;
-  state.guests.forEach(g=>{
-    const l = state.lodging[g.id] || {};
-    html += `
-    <div class="card">
-      <h3 style="font-size:16px;font-weight:700;text-transform:uppercase;margin-bottom:12px;">${esc(g.name)}</h3>
-      <div class="lodging-fields">
-        <div>
-          <label>Fecha de llegada</label>
-          <input type="date" value="${esc(l.arrivalDate||'')}" data-action="lodging-field" data-guest="${g.id}" data-field="arrivalDate" style="width:100%;">
-        </div>
-        <div>
-          <label>Hora de llegada</label>
-          <input type="time" value="${esc(l.arrivalTime||'')}" data-action="lodging-field" data-guest="${g.id}" data-field="arrivalTime" style="width:100%;">
-        </div>
+function renderGuestEditForm(g){
+  const l = state.lodging[g.id] || {};
+  return `
+  <div class="card">
+    <div class="section-title">Editando</div>
+    <input type="text" id="editGuestName-${g.id}" value="${esc(g.name)}" placeholder="Nombre" style="width:100%;margin-bottom:14px;">
+    <div class="lodging-fields">
+      <div>
+        <label>Fecha de llegada</label>
+        <input type="date" id="editArrivalDate-${g.id}" value="${esc(l.arrivalDate||'')}" style="width:100%;">
       </div>
-      <div class="lodging-fields" style="margin-top:10px;">
-        <div>
-          <label>Fecha de salida</label>
-          <input type="date" value="${esc(l.departureDate||'')}" data-action="lodging-field" data-guest="${g.id}" data-field="departureDate" style="width:100%;">
-        </div>
-        <div>
-          <label>Hora de salida</label>
-          <input type="time" value="${esc(l.departureTime||'')}" data-action="lodging-field" data-guest="${g.id}" data-field="departureTime" style="width:100%;">
-        </div>
+      <div>
+        <label>Hora de llegada</label>
+        <input type="time" id="editArrivalTime-${g.id}" value="${esc(l.arrivalTime||'')}" style="width:100%;">
       </div>
-      <div class="lodging-fields" style="margin-top:10px;">
-        <div>
-          <label>Nombre del hospedaje (opcional)</label>
-          <input type="text" placeholder="Ej. Hotel Real" value="${esc(l.placeName||'')}" data-action="lodging-field" data-guest="${g.id}" data-field="placeName" style="width:100%;">
-        </div>
-        <div>
-          <label>Dirección o link de Google Maps</label>
-          <input type="text" placeholder="Pega el link o escribe la dirección" value="${esc(l.mapsLink||'')}" data-action="lodging-field" data-guest="${g.id}" data-field="mapsLink" style="width:100%;">
-        </div>
+    </div>
+    <div class="lodging-fields" style="margin-top:10px;">
+      <div>
+        <label>Fecha de salida</label>
+        <input type="date" id="editDepartureDate-${g.id}" value="${esc(l.departureDate||'')}" style="width:100%;">
       </div>
-      ${mapsBlockHtml(l.mapsLink)}
-    </div>`;
-  });
-  return html;
+      <div>
+        <label>Hora de salida</label>
+        <input type="time" id="editDepartureTime-${g.id}" value="${esc(l.departureTime||'')}" style="width:100%;">
+      </div>
+    </div>
+    <input type="text" id="editPlaceName-${g.id}" value="${esc(l.placeName||'')}" placeholder="Nombre del hospedaje (opcional)" style="width:100%;margin:14px 0 10px;">
+    <input type="text" id="editMapsLink-${g.id}" value="${esc(l.mapsLink||'')}" placeholder="Dirección o link de Google Maps" style="width:100%;margin-bottom:14px;">
+    <div class="row-start">
+      <button class="btn small" data-action="save-guest" data-id="${g.id}">Guardar</button>
+      <button class="btn small secondary" data-action="cancel-guest" data-id="${g.id}">Cancelar</button>
+    </div>
+  </div>`;
 }
 
 function renderInvitados(){
   let html = `<div class="section-title">Invitados (${state.guests.length})</div>`;
-  html += `<ul class="guest-list">`;
-  html += state.guests.map(g=>{
+  if(state.guests.length === 0){
+    html += `<div class="empty">Sin invitados todavía.</div>`;
+  }
+  state.guests.forEach(g=>{
     if(editingItem.guest === g.id){
-      return `<li>
-        <input type="text" id="editGuestName-${g.id}" value="${esc(g.name)}" style="flex:1;margin-right:10px;">
-        <div class="row-start">
-          <button class="icon-btn" data-action="save-guest" data-guest="${g.id}" title="Guardar">✓</button>
-          <button class="icon-btn" data-action="cancel-guest" data-guest="${g.id}" title="Cancelar">✕</button>
-        </div>
-      </li>`;
+      html += renderGuestEditForm(g);
+      return;
     }
-    return `<li>
-      <span>${esc(g.name)}${g.id===myGuestId?' <span style="color:var(--muted);font-size:11px;text-transform:uppercase;">(tú)</span>':''}</span>
-      <div class="row-start">
-        <button class="icon-btn" data-action="edit-guest" data-guest="${g.id}" title="Editar">✎</button>
-        <button class="icon-btn" data-action="delete-guest" data-guest="${g.id}" title="Eliminar">✕</button>
-      </div>
-    </li>`;
-  }).join('') || '<li class="empty" style="border:none;">Sin invitados todavía</li>';
-  html += `</ul>`;
+    const isOpen = expandedIds.has(g.id);
+    const color = avatarColor(g.id);
+    const l = state.lodging[g.id] || {};
+    html += `<div class="card">
+      <button class="event-chip-toggle" data-action="toggle-expand" data-id="${g.id}" style="${isOpen ? `background:${color};color:#fff;border-color:${color};` : `background:var(--paper);color:var(--ink);border-color:var(--ink);`}">${esc(g.name)}${g.id===myGuestId ? ' · TÚ' : ''}</button>`;
+    if(isOpen){
+      const arrivalParts = [];
+      if(l.arrivalDate) arrivalParts.push(formatDateLabel(l.arrivalDate) + (l.arrivalTime ? ' · ' + l.arrivalTime : ''));
+      const departureParts = [];
+      if(l.departureDate) departureParts.push(formatDateLabel(l.departureDate) + (l.departureTime ? ' · ' + l.departureTime : ''));
+      html += `
+      <div class="event-body">
+        ${arrivalParts.length ? `<div class="event-meta">Llega: ${esc(arrivalParts[0])}</div>` : ''}
+        ${departureParts.length ? `<div class="event-meta">Sale: ${esc(departureParts[0])}</div>` : ''}
+        ${l.placeName ? `<div class="event-notes">${esc(l.placeName)}</div>` : ''}
+        ${mapsBlockHtml(l.mapsLink, color)}
+        <div class="row-start" style="margin-top:14px;">
+          <button class="arrow-link" data-action="edit-guest" data-id="${g.id}" style="text-transform:none;">Editar</button>
+          <button class="arrow-link" data-action="delete-guest" data-guest="${g.id}" style="text-transform:none;">Eliminar</button>
+        </div>
+      </div>`;
+    }
+    html += `</div>`;
+  });
   html += `
   <div class="add-card">
     <div class="row-start">
@@ -1002,16 +1035,13 @@ function attachHandlers(){
     el.dataset.bound = '1';
     el.addEventListener('click', onAction);
   });
-  document.querySelectorAll('[data-action="lodging-field"]').forEach(el=>{
-    if(el.dataset.boundBlur) return;
-    el.dataset.boundBlur = '1';
-    el.addEventListener('change', async ()=>{
-      const gid = el.dataset.guest, field = el.dataset.field;
-      if(!state.lodging[gid]) state.lodging[gid] = {};
-      state.lodging[gid][field] = el.value;
-      await persist();
-      showToast('Guardado');
-      render();
+  document.querySelectorAll('input[type="date"], input[type="time"]').forEach(el=>{
+    if(el.dataset.boundFocus) return;
+    el.dataset.boundFocus = '1';
+    el.addEventListener('focus', ()=>{ suppressRender = true; });
+    el.addEventListener('blur', ()=>{
+      suppressRender = false;
+      if(pendingRender){ pendingRender = false; render(); }
     });
   });
 }
@@ -1041,6 +1071,12 @@ async function onAction(e){
     delete state.rsvps[id];
     if(listKey === 'events'){ state.expenses = state.expenses.filter(ex=>ex.eventId!==id); }
     await persist(); render();
+  }
+  else if(action === 'toggle-layer'){
+    const layer = el.dataset.layer;
+    if(!generalMapInstance || !generalLayerGroups[layer]) return;
+    if(el.checked){ generalMapInstance.addLayer(generalLayerGroups[layer]); }
+    else { generalMapInstance.removeLayer(generalLayerGroups[layer]); }
   }
   else if(action === 'toggle-expand'){
     const id = el.dataset.id;
@@ -1084,7 +1120,7 @@ async function onAction(e){
     await persist(); render(); showToast('Invitado agregado');
   }
   else if(action === 'edit-guest'){
-    editingItem.guest = el.dataset.guest;
+    editingItem.guest = el.dataset.id;
     render();
   }
   else if(action === 'cancel-guest'){
@@ -1092,11 +1128,18 @@ async function onAction(e){
     render();
   }
   else if(action === 'save-guest'){
-    const id = el.dataset.guest;
-    const val = document.getElementById(`editGuestName-${id}`).value.trim();
-    if(!val) return showToast('El nombre no puede quedar vacío');
+    const id = el.dataset.id;
     const g = state.guests.find(x=>x.id===id);
-    if(g) g.name = val;
+    const newName = document.getElementById(`editGuestName-${id}`).value.trim();
+    if(!newName) return showToast('El nombre no puede quedar vacío');
+    if(g) g.name = newName;
+    if(!state.lodging[id]) state.lodging[id] = {};
+    state.lodging[id].arrivalDate = document.getElementById(`editArrivalDate-${id}`).value;
+    state.lodging[id].arrivalTime = document.getElementById(`editArrivalTime-${id}`).value;
+    state.lodging[id].departureDate = document.getElementById(`editDepartureDate-${id}`).value;
+    state.lodging[id].departureTime = document.getElementById(`editDepartureTime-${id}`).value;
+    state.lodging[id].placeName = document.getElementById(`editPlaceName-${id}`).value.trim();
+    state.lodging[id].mapsLink = document.getElementById(`editMapsLink-${id}`).value.trim();
     editingItem.guest = null;
     await persist(); render(); showToast('Guardado');
   }
@@ -1107,6 +1150,7 @@ async function onAction(e){
     Object.keys(state.rsvps).forEach(itemId=> delete state.rsvps[itemId][id]);
     state.expenses.forEach(ex=>{ ex.splitAmong = ex.splitAmong.filter(g=>g!==id); });
     delete state.lodging[id];
+    expandedIds.delete(id);
     if(myGuestId === id) setMyGuestId(null);
     await persist(); render();
   }
