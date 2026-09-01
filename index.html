@@ -159,6 +159,16 @@
     background:rgba(0,0,0,.28);
     padding:4px 9px;
   }
+  .event-chip{
+    display:inline-block;
+    padding:8px 14px;
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:#fff;
+    font-family:'Space Grotesk', sans-serif;
+  }
   .event-body{padding:14px 2px 0;}
   .event-body h3{font-size:19px;font-weight:700;text-transform:uppercase;letter-spacing:-.01em;}
   .event-meta{font-size:12px;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.04em;}
@@ -481,18 +491,14 @@ function renderItemCard(listKey, item, cardIndex){
   const iAmGoing = myGuestId && attendeeIds.includes(myGuestId);
   return `
   <div class="card">
-    <div class="cover" style="background:${pickColor(cardIndex)};">
-      ${item.time ? `<span class="cover-time">${esc(item.time)}</span>` : ''}
-      <span class="cover-name">${esc(item.name)}</span>
+    <div class="row">
+      <span class="event-chip" style="background:${pickColor(cardIndex)};">${esc(item.name)}</span>
+      <button class="rsvp-btn ${iAmGoing?'going':''}" data-action="toggle-rsvp" data-event="${item.id}" ${myGuestId?'':'disabled'}>
+        ${iAmGoing ? '✓ Voy' : 'Confirmar'}
+      </button>
     </div>
     <div class="event-body">
-      <div class="row">
-        <h3>${esc(item.name)}</h3>
-        <button class="rsvp-btn ${iAmGoing?'going':''}" data-action="toggle-rsvp" data-event="${item.id}" ${myGuestId?'':'disabled'}>
-          ${iAmGoing ? '✓ Voy' : 'Confirmar'}
-        </button>
-      </div>
-      <div class="event-meta">${esc(item.location||'Sin ubicación')}</div>
+      ${item.time ? `<div class="event-meta">${esc(item.time)}</div>` : ''}
       ${item.notes ? `<div class="event-notes">${esc(item.notes)}</div>` : ''}
       ${mapsBlockHtml(item.location)}
       ${renderAttendeeVisual(attendeeIds)}
@@ -673,11 +679,26 @@ function settlementSuggestions(balances){
 function looksLikeUrl(s){ return /^https?:\/\//i.test((s||'').trim()); }
 function isShortLink(s){ return /goo\.gl\//i.test(s) || /maps\.app\.goo\.gl/i.test(s); }
 
+async function fetchWithTimeout(url, ms){
+  const controller = new AbortController();
+  const timer = setTimeout(()=>controller.abort(), ms);
+  try{
+    const res = await fetch(url, { signal: controller.signal });
+    return await res.json();
+  }finally{
+    clearTimeout(timer);
+  }
+}
+
 async function initCroquisMaps(){
-  if(typeof L === 'undefined') return;
   const els = document.querySelectorAll('.croquis-map:not([data-inited])');
   for(const el of els){
     el.dataset.inited = '1';
+    if(typeof L === 'undefined'){
+      el.style.background = 'none';
+      el.textContent = 'No se pudo cargar el mapa (revisa tu conexión a internet).';
+      continue;
+    }
     const query = el.dataset.query;
     const coordMatch = query.match(/^(-?\d+\.\d+),\s*(-?\d+\.\d+)$/);
     if(coordMatch){
@@ -685,8 +706,7 @@ async function initCroquisMaps(){
       continue;
     }
     try{
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`);
-      const data = await res.json();
+      const data = await fetchWithTimeout(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`, 8000);
       if(data && data[0]){
         buildLeafletMap(el, parseFloat(data[0].lat), parseFloat(data[0].lon));
       } else {
@@ -695,7 +715,7 @@ async function initCroquisMaps(){
       }
     }catch(e){
       el.style.background = 'none';
-      el.textContent = 'No se pudo cargar el mapa.';
+      el.textContent = 'No se pudo cargar el mapa (revisa tu conexión a internet).';
     }
   }
 }
@@ -715,10 +735,15 @@ function formatDateLabel(dateStr){
 }
 
 async function initGeneralMap(){
-  if(typeof L === 'undefined') return;
   const el = document.getElementById('generalMap');
   if(!el || el.dataset.inited) return;
   el.dataset.inited = '1';
+
+  if(typeof L === 'undefined'){
+    el.style.background = 'none';
+    el.textContent = 'No se pudo cargar el mapa (revisa tu conexión a internet).';
+    return;
+  }
 
   const items = [
     ...state.events.map(it => ({ ...it, kind:'evento', color:'#EC1F86' })),
@@ -741,8 +766,7 @@ async function initGeneralMap(){
       lat = parseFloat(coordMatch[1]); lng = parseFloat(coordMatch[2]);
     } else {
       try{
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`);
-        const data = await res.json();
+        const data = await fetchWithTimeout(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`, 8000);
         if(data && data[0]){ lat = parseFloat(data[0].lat); lng = parseFloat(data[0].lon); }
       }catch(e){ /* se omite este punto */ }
     }
@@ -753,7 +777,7 @@ async function initGeneralMap(){
 
   if(points.length === 0){
     el.style.background = 'none';
-    el.textContent = 'No se pudieron ubicar las direcciones en el mapa.';
+    el.textContent = 'Ninguna de las direcciones cargadas se pudo ubicar en el mapa todavía (revisa que no sean links cortos de Google Maps).';
     return;
   }
 
