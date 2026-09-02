@@ -217,6 +217,8 @@
     white-space:nowrap;
   }
   .rsvp-btn.going{ background:var(--green); color:#fff; border-color:var(--green); }
+  .map-day-chip{ margin-bottom:8px; }
+  .map-day-chip.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
   .rsvp-btn:disabled{opacity:.35;cursor:default;}
 
   .attend-row{display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap;}
@@ -383,7 +385,8 @@ let mapCounter = 0;
 let suppressRender = false;
 let pendingRender = false;
 let generalMapInstance = null;
-let generalLayerGroups = { eventos: null, puntos: null, invitados: null };
+let generalMapMarkers = [];
+let mapDayFilter = 'todos';
 const AVATAR_COLORS = ['#E63946','#F3722C','#43AA8B','#277DA1','#9D4EDD','#F72585','#4361EE','#06A77D'];
 const EVENT_COLORS = [
   {bg:'#FF4D4D', fg:'#fff'},
@@ -635,6 +638,12 @@ function renderMapa(){
     html += `<div class="empty">Agrega ubicaciones a tus eventos, puntos de reunión o invitados para verlas aquí.</div>`;
     return html;
   }
+  const dayKeysSet = new Set();
+  [...state.events, ...state.meetingPoints].forEach(it=>{
+    if(it.location && it.location.trim()) dayKeysSet.add(it.date || 'sin-fecha');
+  });
+  const dayKeys = Array.from(dayKeysSet).sort();
+
   html += `
   <div class="row-start" style="margin-bottom:14px;">
     <label style="display:flex;align-items:center;gap:6px;font-size:12px;text-transform:uppercase;letter-spacing:.03em;"><input type="checkbox" data-action="toggle-layer" data-layer="eventos" checked> Eventos</label>
@@ -643,8 +652,22 @@ function renderMapa(){
   </div>
   <div id="generalMap" style="width:100%;height:320px;border:1px solid var(--ink);background:#F2F2F0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Cargando mapa…</div>
   <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:14px;">
-    Cada pin usa el color de su evento, punto de reunión o invitado.
+    Cada pin usa el color de su evento, punto de reunión o invitado. Los invitados se muestran siempre, sin importar el día elegido.
   </div>`;
+
+  if(dayKeys.length > 0){
+    html += `
+    <div style="margin-top:18px;">
+      <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em;">Filtrar por día</label>
+      <div class="row-start" style="flex-wrap:wrap;">
+        <button class="rsvp-btn map-day-chip active" data-action="filter-map-day" data-day="todos">Todos los días</button>
+        ${dayKeys.map(d=>{
+          const label = d === 'sin-fecha' ? 'Sin fecha' : formatDateLabel(d);
+          return `<button class="rsvp-btn map-day-chip" data-action="filter-map-day" data-day="${esc(d)}">${esc(label)}</button>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
   return html;
 }
 
@@ -851,6 +874,20 @@ function popupGuestHtml(name, l){
   </div>`;
 }
 
+function applyMapFilters(){
+  if(!generalMapInstance) return;
+  const categoryStates = {};
+  document.querySelectorAll('[data-action="toggle-layer"]').forEach(cb=>{ categoryStates[cb.dataset.layer] = cb.checked; });
+  generalMapMarkers.forEach(({marker, category, day})=>{
+    const categoryOk = categoryStates[category] !== false;
+    const dayOk = day === null || mapDayFilter === 'todos' || day === mapDayFilter;
+    const shouldShow = categoryOk && dayOk;
+    const isShown = generalMapInstance.hasLayer(marker);
+    if(shouldShow && !isShown) generalMapInstance.addLayer(marker);
+    else if(!shouldShow && isShown) generalMapInstance.removeLayer(marker);
+  });
+}
+
 async function initGeneralMap(){
   const el = document.getElementById('generalMap');
   if(!el || el.dataset.inited) return;
@@ -866,13 +903,13 @@ async function initGeneralMap(){
   const meetingColors = assignColors('meetingPoints');
 
   const eventItems = state.events.filter(it => it.location && it.location.trim())
-    .map(it => ({ id: it.id, name: it.name, location: it.location, category: 'eventos', color: eventColors[it.id].bg }));
+    .map(it => ({ id: it.id, name: it.name, location: it.location, category: 'eventos', color: eventColors[it.id].bg, day: it.date || 'sin-fecha' }));
   const meetingItems = state.meetingPoints.filter(it => it.location && it.location.trim())
-    .map(it => ({ id: it.id, name: it.name, location: it.location, category: 'puntos', color: meetingColors[it.id].bg }));
+    .map(it => ({ id: it.id, name: it.name, location: it.location, category: 'puntos', color: meetingColors[it.id].bg, day: it.date || 'sin-fecha' }));
   const guestItems = state.guests
     .map(g => ({ g, l: state.lodging[g.id] || {} }))
     .filter(x => (x.l.mapsLink || '').trim())
-    .map(x => ({ id: x.g.id, name: x.g.name, location: x.l.mapsLink, category: 'invitados', color: avatarColor(x.g.id), lodging: x.l }));
+    .map(x => ({ id: x.g.id, name: x.g.name, location: x.l.mapsLink, category: 'invitados', color: avatarColor(x.g.id), lodging: x.l, day: null }));
 
   const allItems = [...eventItems, ...meetingItems, ...guestItems];
 
@@ -916,7 +953,7 @@ async function initGeneralMap(){
     subdomains: 'abcd'
   }).addTo(map);
 
-  const layerGroups = { eventos: L.layerGroup(), puntos: L.layerGroup(), invitados: L.layerGroup() };
+  const markersMeta = [];
   const bounds = [];
   points.forEach(p=>{
     const icon = L.divIcon({
@@ -936,14 +973,15 @@ async function initGeneralMap(){
           ${popupAttendeesHtml(attendeeIds)}
         </div>`;
     }
-    const marker = L.marker([p.lat, p.lng], {icon}).bindPopup(popupHtml);
-    layerGroups[p.category].addLayer(marker);
+    const marker = L.marker([p.lat, p.lng], {icon}).bindPopup(popupHtml).addTo(map);
+    markersMeta.push({ marker, category: p.category, day: p.day });
     bounds.push([p.lat, p.lng]);
   });
 
-  Object.values(layerGroups).forEach(lg => lg.addTo(map));
+  generalMapMarkers = markersMeta;
   generalMapInstance = map;
-  generalLayerGroups = layerGroups;
+  mapDayFilter = 'todos';
+  applyMapFilters();
 
   if(bounds.length === 1) map.setView(bounds[0], 14);
   else map.fitBounds(bounds, { padding:[24,24] });
@@ -1157,10 +1195,13 @@ async function onAction(e){
     await persist(); render();
   }
   else if(action === 'toggle-layer'){
-    const layer = el.dataset.layer;
-    if(!generalMapInstance || !generalLayerGroups[layer]) return;
-    if(el.checked){ generalMapInstance.addLayer(generalLayerGroups[layer]); }
-    else { generalMapInstance.removeLayer(generalLayerGroups[layer]); }
+    applyMapFilters();
+  }
+  else if(action === 'filter-map-day'){
+    mapDayFilter = el.dataset.day;
+    document.querySelectorAll('.map-day-chip').forEach(b=>b.classList.remove('active'));
+    el.classList.add('active');
+    applyMapFilters();
   }
   else if(action === 'toggle-expand'){
     const id = el.dataset.id;
