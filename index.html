@@ -100,6 +100,7 @@
     color:var(--ink);
     border:1px solid var(--ink);
     white-space:nowrap;
+    box-shadow:4px 4px 0 0 #000;
   }
   .tab:nth-child(1).active{ background:var(--pink); color:#fff; border-color:var(--pink); }
   .tab:nth-child(2).active{ background:var(--orange); color:#fff; border-color:var(--orange); }
@@ -172,6 +173,7 @@
     border:1.5px solid var(--ink);
     cursor:pointer;
     transition:background .15s, color .15s, border-color .15s;
+    box-shadow:5px 5px 0 0 #000;
   }
   .event-chip{
     display:inline-block;
@@ -215,10 +217,11 @@
     color:var(--ink);
     cursor:pointer;
     white-space:nowrap;
+    box-shadow:4px 4px 0 0 #000;
   }
   .rsvp-btn.going{ background:var(--green); color:#fff; border-color:var(--green); }
   .map-day-chip{ margin-bottom:8px; }
-  .map-day-chip.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
+  .map-day-chip.active{ background:var(--ink); color:#fff; border-color:var(--ink); box-shadow:none; }
   .rsvp-btn:disabled{opacity:.35;cursor:default;}
 
   .attend-row{display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap;}
@@ -247,7 +250,7 @@
     color:#fff;
     cursor:pointer;
   }
-  .btn.secondary{background:var(--paper);color:var(--ink);}
+  .btn.secondary{background:var(--paper);color:var(--ink);box-shadow:4px 4px 0 0 #000;}
   .btn.small{padding:7px 13px;font-size:11px;}
 
   .section-title{
@@ -685,8 +688,9 @@ function renderLinkBlock(field, label, placeholder, value, iconHtml, btnColor, b
         ${value ? `<button class="arrow-link" data-action="cancel-link" data-field="${field}" style="text-transform:none;">Cancelar</button>` : ''}
       </div>`;
   } else {
+    const shadow = btnColor === 'var(--ink)' ? '' : 'box-shadow:5px 5px 0 0 #000;';
     html += `
-      <a href="${esc(value)}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;background:${btnColor};color:${btnTextColor};padding:14px 16px;font-weight:700;text-transform:uppercase;font-size:13px;letter-spacing:.04em;text-decoration:none;">
+      <a href="${esc(value)}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;background:${btnColor};color:${btnTextColor};padding:14px 16px;font-weight:700;text-transform:uppercase;font-size:13px;letter-spacing:.04em;text-decoration:none;${shadow}">
         ${iconHtml} ${esc(btnLabel)}
       </a>
       <div class="row-start" style="margin-top:14px;">
